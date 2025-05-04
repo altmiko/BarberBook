@@ -11,6 +11,13 @@ if (!isLoggedIn() || !isCustomer()) {
 
 $customer_id = $_SESSION['user_id'];
 
+// Fetch customer's current name
+$nameQuery = "SELECT FirstName, LastName FROM Customers WHERE UserID = ?";
+$nameStmt = $conn->prepare($nameQuery);
+$nameStmt->bind_param("i", $customer_id);
+$nameStmt->execute();
+$customerName = $nameStmt->get_result()->fetch_assoc();
+
 // Fetch upcoming appointments
 $upcomingQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, s.Name as ServiceName, 
                    b.FirstName as BarberFirstName, b.LastName as BarberLastName, p.Amount 
@@ -71,7 +78,7 @@ include '../includes/header.php';
         <div class="container">
             <div class="dashboard-header">
                 <h1>Customer Dashboard</h1>
-                <p>Welcome back, <?php echo htmlspecialchars($_SESSION['user_name']); ?>!</p>
+                <p>Welcome back, <?php echo htmlspecialchars($customerName['FirstName'] . ' ' . $customerName['LastName']); ?>!</p>
             </div>
             
             <div class="dashboard-overview">
