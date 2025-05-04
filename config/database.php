@@ -1,13 +1,12 @@
 <?php
 // Database connection parameters
-$servername = "barberbookdb-barberbook.j.aivencloud.com";
-$username = "avnadmin";
-$password = "AVNS_EHS3bUWR3_7dcdFu9Ow";
-$dbname = "barberbookdb";
-$port = "14282"
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "barberbook";
 
 // Create connection
-$conn = new mysqli($servername, $username, $password, $port, $dbname);
+$conn = new mysqli($servername, $username, $password, $dbname);
 
 // Check connection
 if ($conn->connect_error) {

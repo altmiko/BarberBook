@@ -13,7 +13,7 @@ $customer_id = $_SESSION['user_id'];
 $errors = [];
 $success = false;
 $selectedDate = '';
-$selectedService = '';
+$selectedServices = [];
 $selectedBarber = '';
 $selectedTime = '';
 
@@ -21,7 +21,7 @@ $selectedTime = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Get form data
     $selectedDate = sanitize($_POST['booking_date']);
-    $selectedService = (int) $_POST['service_id'];
+    $selectedServices = isset($_POST['service_ids']) ? $_POST['service_ids'] : [];
     $selectedBarber = (int) $_POST['barber_id'];
     $selectedTime = sanitize($_POST['time_slot']);
     
@@ -37,8 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    if (empty($selectedService)) {
-        $errors['service'] = 'Please select a service';
+    if (empty($selectedServices)) {
+        $errors['service'] = 'Please select at least one service';
     }
     
     if (empty($selectedBarber)) {
@@ -51,20 +51,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // If no errors, proceed with booking
     if (empty($errors)) {
-        // Get service duration
-        $durationQuery = "SELECT Duration, Price FROM Services WHERE ServiceID = ?";
-        $durationStmt = $conn->prepare($durationQuery);
-        $durationStmt->bind_param("i", $selectedService);
-        $durationStmt->execute();
-        $durationResult = $durationStmt->get_result();
-        $serviceData = $durationResult->fetch_assoc();
-        $duration = $serviceData['Duration'];
-        $price = $serviceData['Price'];
+        // Calculate total duration and price
+        $totalDuration = 0;
+        $totalPrice = 0;
+        $serviceDetails = [];
+        
+        foreach ($selectedServices as $serviceId) {
+            $serviceQuery = "SELECT Duration, Price, Name FROM Services WHERE ServiceID = ?";
+            $serviceStmt = $conn->prepare($serviceQuery);
+            $serviceStmt->bind_param("i", $serviceId);
+            $serviceStmt->execute();
+            $serviceResult = $serviceStmt->get_result();
+            $serviceData = $serviceResult->fetch_assoc();
+            
+            $totalDuration += $serviceData['Duration'];
+            $totalPrice += $serviceData['Price'];
+            $serviceDetails[] = $serviceData;
+        }
         
         // Calculate end time
         $startDateTime = new DateTime($selectedDate . ' ' . $selectedTime);
         $endDateTime = clone $startDateTime;
-        $endDateTime->add(new DateInterval('PT' . $duration . 'M'));
+        $endDateTime->add(new DateInterval('PT' . $totalDuration . 'M'));
         
         $startTime = $startDateTime->format('Y-m-d H:i:s');
         $endTime = $endDateTime->format('Y-m-d H:i:s');
@@ -94,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Create payment record
                 $paymentSql = "INSERT INTO Payments (Amount, PayMethod, PayStatus) VALUES (?, 'credit_card', 'pending')";
                 $paymentStmt = $conn->prepare($paymentSql);
-                $paymentStmt->bind_param("i", $price);
+                $paymentStmt->bind_param("i", $totalPrice);
                 $paymentStmt->execute();
                 $paymentId = $conn->insert_id;
                 
@@ -112,11 +120,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $slotStmt->bind_param("sii", $startTime, $selectedBarber, $appointmentId);
                 $slotStmt->execute();
                 
-                // Link service to appointment
-                $serviceAppointmentSql = "INSERT INTO ApptContains (ServiceID, AppointmentID) VALUES (?, ?)";
-                $serviceAppointmentStmt = $conn->prepare($serviceAppointmentSql);
-                $serviceAppointmentStmt->bind_param("ii", $selectedService, $appointmentId);
-                $serviceAppointmentStmt->execute();
+                // Link services to appointment
+                foreach ($selectedServices as $serviceId) {
+                    $serviceAppointmentSql = "INSERT INTO ApptContains (ServiceID, AppointmentID) VALUES (?, ?)";
+                    $serviceAppointmentStmt = $conn->prepare($serviceAppointmentSql);
+                    $serviceAppointmentStmt->bind_param("ii", $serviceId, $appointmentId);
+                    $serviceAppointmentStmt->execute();
+                }
                 
                 // Link barber to appointment
                 $barberAppointmentSql = "INSERT INTO BarberHas (BarberID, AppointmentID) VALUES (?, ?)";
@@ -136,20 +146,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $barberResult = $barberStmt->get_result();
                 $barberData = $barberResult->fetch_assoc();
                 
-                $serviceQuery = "SELECT Name FROM Services WHERE ServiceID = ?";
-                $serviceStmt = $conn->prepare($serviceQuery);
-                $serviceStmt->bind_param("i", $selectedService);
-                $serviceStmt->execute();
-                $serviceResult = $serviceStmt->get_result();
-                $serviceData = $serviceResult->fetch_assoc();
-                
                 $subject = "Appointment Confirmation - Barberbook";
                 $message = "Dear " . $_SESSION['user_name'] . ",\n\n";
                 $message .= "Your appointment has been confirmed for " . date('F j, Y', strtotime($selectedDate)) . " at " . date('g:i A', strtotime($selectedTime)) . ".\n\n";
-                $message .= "Service: " . $serviceData['Name'] . "\n";
-                $message .= "Barber: " . $barberData['FirstName'] . " " . $barberData['LastName'] . "\n";
-                $message .= "Duration: " . $duration . " minutes\n";
-                $message .= "Price: $" . $price . "\n\n";
+                $message .= "Services:\n";
+                foreach ($serviceDetails as $service) {
+                    $message .= "- " . $service['Name'] . " (BDT " . $service['Price'] . ")\n";
+                }
+                $message .= "\nTotal Duration: " . $totalDuration . " minutes\n";
+                $message .= "Total Price: BDT " . $totalPrice . "\n";
+                $message .= "Barber: " . $barberData['FirstName'] . " " . $barberData['LastName'] . "\n\n";
                 $message .= "Thank you for choosing Barberbook!\n";
                 
                 sendNotification($customerEmail, $subject, $message, $customer_id, $conn);
@@ -157,12 +163,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Set success flag and reset form
                 $success = true;
                 $selectedDate = '';
-                $selectedService = '';
+                $selectedServices = [];
                 $selectedBarber = '';
                 $selectedTime = '';
                 
                 setFlashMessage("Your appointment has been successfully booked! You can view your booking details in your dashboard.", "success");
-                redirect("customer/appointments.php");
+                redirect("customer/dashboard.php");
                 
             } catch (Exception $e) {
                 // Rollback the transaction if there was an error
@@ -279,18 +285,18 @@ include 'includes/header.php';
                                     <?php if ($servicesResult->num_rows > 0): ?>
                                         <?php while ($service = $servicesResult->fetch_assoc()): ?>
                                             <div class="service-option">
-                                                <input type="radio" name="service_id" id="service-<?php echo $service['ServiceID']; ?>" value="<?php echo $service['ServiceID']; ?>" 
+                                                <input type="checkbox" name="service_ids[]" id="service-<?php echo $service['ServiceID']; ?>" value="<?php echo $service['ServiceID']; ?>" 
                                                     data-price="<?php echo $service['Price']; ?>" 
                                                     data-duration="<?php echo $service['Duration']; ?>"
                                                     data-name="<?php echo htmlspecialchars($service['Name']); ?>"
-                                                    <?php echo ($selectedService == $service['ServiceID']) ? 'checked' : ''; ?> required>
+                                                    <?php echo (in_array($service['ServiceID'], $selectedServices)) ? 'checked' : ''; ?>>
                                                 <label for="service-<?php echo $service['ServiceID']; ?>" class="service-card">
                                                     <div class="service-icon"><i class="fas fa-cut"></i></div>
                                                     <h4><?php echo htmlspecialchars($service['Name']); ?></h4>
                                                     <p><?php echo htmlspecialchars($service['Description']); ?></p>
                                                     <div class="service-details">
                                                         <span class="duration"><i class="far fa-clock"></i> <?php echo $service['Duration']; ?> min</span>
-                                                        <span class="price">$<?php echo $service['Price']; ?></span>
+                                                        <span class="price">BDT <?php echo $service['Price']; ?></span>
                                                     </div>
                                                 </label>
                                             </div>
@@ -321,7 +327,8 @@ include 'includes/header.php';
                                                     <?php echo ($selectedBarber == $barber['UserID']) ? 'checked' : ''; ?> required>
                                                 <label for="barber-<?php echo $barber['UserID']; ?>" class="barber-card">
                                                     <div class="barber-image">
-                                                        <img src="assets/images/barber-<?php echo $barber['UserID']; ?>.jpg" alt="<?php echo htmlspecialchars($barber['FirstName'] . ' ' . $barber['LastName']); ?>" onerror="this.src='assets/images/default-barber.jpg'">
+                                                        <img src="https://images.pexels.com/photos/15613465/pexels-photo-15613465/free-photo-of-man-with-beard-holding-scissors.jpeg?auto=compress&cs=tinysrgb&w=600" 
+                                                             alt="<?php echo htmlspecialchars($barber['FirstName'] . ' ' . $barber['LastName']); ?>">
                                                     </div>
                                                     <h4><?php echo htmlspecialchars($barber['FirstName'] . ' ' . $barber['LastName']); ?></h4>
                                                     <p class="barber-bio"><?php echo htmlspecialchars(substr($barber['Bio'] ?? 'Professional barber with years of experience', 0, 100)) . '...'; ?></p>
@@ -429,18 +436,13 @@ include 'includes/header.php';
                                         </div>
                                     </div>
                                     
-                                    <div class="payment-info">
-                                        <p>Payment will be collected at the salon after your service.</p>
-                                        <p>You can cancel or reschedule your appointment up to 24 hours before your scheduled time.</p>
+                                    <!-- Hidden field for time selection -->
+                                    <input type="hidden" name="time_slot" id="selected_time" value="<?php echo $selectedTime; ?>">
+                                    
+                                    <div class="form-buttons">
+                                        <button type="button" class="btn btn-outline prev-step" data-step="4">Back</button>
+                                        <button type="submit" class="btn btn-primary">Confirm Booking</button>
                                     </div>
-                                </div>
-                                
-                                <!-- Hidden field for time selection -->
-                                <input type="hidden" name="time_slot" id="selected_time" value="<?php echo $selectedTime; ?>">
-                                
-                                <div class="form-buttons">
-                                    <button type="button" class="btn btn-outline prev-step" data-step="4">Back</button>
-                                    <button type="submit" class="btn btn-primary">Confirm Booking</button>
                                 </div>
                             </div>
                         </form>
@@ -791,7 +793,7 @@ const nextButtons = document.querySelectorAll('.next-step');
 const prevButtons = document.querySelectorAll('.prev-step');
 
 // Service selection summary update
-const serviceRadios = document.querySelectorAll('input[name="service_id"]');
+const serviceCheckboxes = document.querySelectorAll('input[name="service_ids[]"]');
 const barberRadios = document.querySelectorAll('input[name="barber_id"]');
 const dateInput = document.getElementById('booking_date');
 const summaryService = document.getElementById('summary-service');
@@ -822,10 +824,10 @@ nextButtons.forEach(button => {
         let isValid = true;
         
         if (currentStep === 1) {
-            const selectedService = document.querySelector('input[name="service_id"]:checked');
-            if (!selectedService) {
+            const selectedServices = Array.from(document.querySelectorAll('input[name="service_ids[]"]:checked'));
+            if (selectedServices.length === 0) {
                 isValid = false;
-                alert('Please select a service to continue.');
+                alert('Please select at least one service to continue.');
             }
         } else if (currentStep === 2) {
             const selectedBarber = document.querySelector('input[name="barber_id"]:checked');
@@ -868,15 +870,16 @@ prevButtons.forEach(button => {
 });
 
 // Service selection
-serviceRadios.forEach(radio => {
-    radio.addEventListener('change', function() {
-        const serviceName = this.getAttribute('data-name');
-        const servicePrice = this.getAttribute('data-price');
-        const serviceDuration = this.getAttribute('data-duration');
+serviceCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const selectedServices = Array.from(document.querySelectorAll('input[name="service_ids[]"]:checked'));
+        const serviceNames = selectedServices.map(service => service.getAttribute('data-name')).join(', ');
+        const totalPrice = selectedServices.reduce((sum, service) => sum + parseFloat(service.getAttribute('data-price')), 0);
+        const totalDuration = selectedServices.reduce((sum, service) => sum + parseInt(service.getAttribute('data-duration')), 0);
         
-        summaryService.textContent = serviceName;
-        summaryPrice.textContent = `$${servicePrice}`;
-        summaryDuration.textContent = `${serviceDuration} min`;
+        summaryService.textContent = serviceNames || '-';
+        summaryPrice.textContent = totalPrice > 0 ? `BDT ${totalPrice}` : '-';
+        summaryDuration.textContent = totalDuration > 0 ? `${totalDuration} min` : '-';
         
         // Also update time slots if date and barber are selected
         if (dateInput.value && document.querySelector('input[name="barber_id"]:checked')) {
@@ -947,21 +950,22 @@ function handleTimeSlotSelection() {
 function loadTimeSlots() {
     const selectedDate = dateInput.value;
     const selectedBarber = document.querySelector('input[name="barber_id"]:checked').value;
-    const selectedService = document.querySelector('input[name="service_id"]:checked').value;
+    const selectedServices = Array.from(document.querySelectorAll('input[name="service_ids[]"]:checked'));
     
-    if (!selectedDate || !selectedBarber || !selectedService) {
-        timeSlotsContainer.innerHTML = '<p>Please select a date, service, and barber first.</p>';
+    if (!selectedDate || !selectedBarber || selectedServices.length === 0) {
+        timeSlotsContainer.innerHTML = '<p>Please select a date, at least one service, and a barber first.</p>';
         return;
     }
     
     timeSlotsContainer.innerHTML = '<p>Loading available time slots...</p>';
     
-    // In a real application, this would be an AJAX call to the server
-    // For demo purposes, we'll generate some sample time slots
+    // Calculate total duration
+    const totalDuration = selectedServices.reduce((sum, service) => {
+        return sum + parseInt(service.getAttribute('data-duration'));
+    }, 0);
+    
+    // Generate time slots
     setTimeout(() => {
-        const serviceDuration = parseInt(document.querySelector('input[name="service_id"]:checked').getAttribute('data-duration'));
-        
-        // Generate time slots from 9 AM to 6 PM with 30-minute intervals
         const timeSlots = [];
         const unavailableTimes = ['10:00', '11:30', '14:00', '16:30']; // Example of unavailable times
         
@@ -971,13 +975,13 @@ function loadTimeSlots() {
                 const formattedMinute = minute.toString().padStart(2, '0');
                 const timeString = `${formattedHour}:${formattedMinute}`;
                 
-                // Check if this slot allows enough time for the service before closing (6 PM)
+                // Check if this slot allows enough time for all services before closing (6 PM)
                 const slotTime = new Date();
                 slotTime.setHours(hour, minute);
                 
-                const endTime = new Date(slotTime.getTime() + serviceDuration * 60000);
+                const endTime = new Date(slotTime.getTime() + totalDuration * 60000);
                 if (endTime.getHours() >= 18) {
-                    continue; // Skip if service would end after closing time
+                    continue; // Skip if services would end after closing time
                 }
                 
                 const isUnavailable = unavailableTimes.includes(timeString);
@@ -1011,11 +1015,10 @@ function loadTimeSlots() {
 
 // Update confirmation page
 function updateConfirmationPage() {
-    // Get selected service details
-    const selectedService = document.querySelector('input[name="service_id"]:checked');
-    const serviceName = selectedService.getAttribute('data-name');
-    const servicePrice = selectedService.getAttribute('data-price');
-    const serviceDuration = selectedService.getAttribute('data-duration');
+    const selectedServices = Array.from(document.querySelectorAll('input[name="service_ids[]"]:checked'));
+    const serviceNames = selectedServices.map(service => service.getAttribute('data-name')).join(', ');
+    const totalPrice = selectedServices.reduce((sum, service) => sum + parseFloat(service.getAttribute('data-price')), 0);
+    const totalDuration = selectedServices.reduce((sum, service) => sum + parseInt(service.getAttribute('data-duration')), 0);
     
     // Get selected barber
     const selectedBarber = document.querySelector('input[name="barber_id"]:checked');
@@ -1040,9 +1043,9 @@ function updateConfirmationPage() {
     });
     
     // Update confirmation page
-    confirmService.textContent = serviceName;
-    confirmPrice.textContent = `$${servicePrice}`;
-    confirmDuration.textContent = `${serviceDuration} min`;
+    confirmService.textContent = serviceNames;
+    confirmPrice.textContent = `BDT ${totalPrice}`;
+    confirmDuration.textContent = `${totalDuration} min`;
     confirmBarber.textContent = barberName;
     confirmDate.textContent = formattedDate;
     confirmTime.textContent = formattedTime;
@@ -1051,15 +1054,10 @@ function updateConfirmationPage() {
 // Initialize any pre-selected options
 window.addEventListener('DOMContentLoaded', () => {
     // Check if any service is pre-selected
-    const preSelectedService = document.querySelector('input[name="service_id"]:checked');
-    if (preSelectedService) {
-        const serviceName = preSelectedService.getAttribute('data-name');
-        const servicePrice = preSelectedService.getAttribute('data-price');
-        const serviceDuration = preSelectedService.getAttribute('data-duration');
-        
-        summaryService.textContent = serviceName;
-        summaryPrice.textContent = `$${servicePrice}`;
-        summaryDuration.textContent = `${serviceDuration} min`;
+    const preSelectedServices = Array.from(document.querySelectorAll('input[name="service_ids[]"]:checked'));
+    if (preSelectedServices.length > 0) {
+        const serviceNames = preSelectedServices.map(service => service.getAttribute('data-name')).join(', ');
+        summaryService.textContent = serviceNames;
     }
     
     // Check if any barber is pre-selected
@@ -1094,7 +1092,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     
     // Load time slots if all required fields are selected
-    if (dateInput.value && document.querySelector('input[name="barber_id"]:checked') && document.querySelector('input[name="service_id"]:checked')) {
+    if (dateInput.value && document.querySelector('input[name="barber_id"]:checked') && document.querySelector('input[name="service_ids[]"]:checked')) {
         loadTimeSlots();
     }
 });
