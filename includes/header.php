@@ -28,7 +28,7 @@ if (strpos($_SERVER['PHP_SELF'], '/barber/') !== false || strpos($_SERVER['PHP_S
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="<?php echo $base_path; ?>assets/css/styles.css">
+    <link rel="stylesheet" href="<?php echo $base_path; ?>assets/css/styles.css?v=<?php echo time(); ?>">
 </head>
 <body>
     <header class="header">
@@ -47,7 +47,6 @@ if (strpos($_SERVER['PHP_SELF'], '/barber/') !== false || strpos($_SERVER['PHP_S
                         <li><a href="<?php echo $base_path; ?>services.php" class="<?php echo (basename($_SERVER['PHP_SELF']) == 'services.php') ? 'active' : ''; ?>">Services</a></li>
                         <li><a href="<?php echo $base_path; ?>barbers.php" class="<?php echo (basename($_SERVER['PHP_SELF']) == 'barbers.php') ? 'active' : ''; ?>">Barbers</a></li>
                         <li><a href="<?php echo $base_path; ?>booking.php" class="<?php echo (basename($_SERVER['PHP_SELF']) == 'booking.php') ? 'active' : ''; ?>">Book Now</a></li>
-                        <li><a href="<?php echo $base_path; ?>contact.php" class="<?php echo (basename($_SERVER['PHP_SELF']) == 'contact.php') ? 'active' : ''; ?>">Contact</a></li>
                     </ul>
                 </nav>
                 

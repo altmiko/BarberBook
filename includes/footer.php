@@ -29,7 +29,6 @@ if (strpos($_SERVER['PHP_SELF'], '/barber/') !== false || strpos($_SERVER['PHP_S
                     <li><a href="<?php echo $base_path; ?>services.php">Services</a></li>
                     <li><a href="<?php echo $base_path; ?>barbers.php">Barbers</a></li>
                     <li><a href="<?php echo $base_path; ?>booking.php">Book Now</a></li>
-                    <li><a href="<?php echo $base_path; ?>contact.php">Contact</a></li>
                 </ul>
             </div>
             
@@ -52,19 +51,12 @@ if (strpos($_SERVER['PHP_SELF'], '/barber/') !== false || strpos($_SERVER['PHP_S
             
             <div class="footer-contact">
                 <h3>Contact Us</h3>
-                <p><i class="fas fa-map-marker-alt"></i> 123 Main Street, City, State 12345</p>
-                <p><i class="fas fa-phone"></i> (123) 456-7890</p>
                 <p><i class="fas fa-envelope"></i> info@barberbook.com</p>
-                <p><i class="fas fa-clock"></i> Mon-Sat: 9:00 AM - 8:00 PM</p>
             </div>
         </div>
         
         <div class="footer-bottom">
             <p>&copy; <?php echo date('Y'); ?> Barberbook. All Rights Reserved.</p>
-            <div class="footer-bottom-links">
-                <a href="<?php echo $base_path; ?>privacy.php">Privacy Policy</a>
-                <a href="<?php echo $base_path; ?>terms.php">Terms of Service</a>
-            </div>
         </div>
     </div>
 </footer>

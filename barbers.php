@@ -3,46 +3,39 @@ session_start();
 require_once 'config/database.php';
 require_once 'includes/functions.php';
 
-$page_title = "Our Services";
+// Define page title
+$page_title = "Barbers";
 include 'includes/header.php';
-
-$sql = "SELECT * FROM Services ORDER BY Price";
-$result = $conn->query($sql);
 ?>
 
 <main>
-    <div class="container">
-        <h1>Our Services</h1>
-        <div class="services-grid">
-            <?php
-            if ($result && $result->num_rows > 0) {
-                while ($row = $result->fetch_assoc()) {
-                    echo '<div class="service-card">';
-                    echo '<div class="service-icon"><i class="fas fa-cut"></i></div>';
-                    echo '<h3>' . htmlspecialchars($row['Name']) . '</h3>';
-                    echo '<p>' . htmlspecialchars($row['Description']) . '</p>';
-                    echo '<div class="service-details">';
-                    echo '<span class="duration"><i class="far fa-clock"></i> ' . htmlspecialchars($row['Duration']) . ' min</span>';
-                    echo '<span class="price">BDT ' . number_format($row['Price'], 2) . '</span>';
-                    echo '</div>';
-                    echo '<a href="booking.php?service=' . $row['ServiceID'] . '" class="btn btn-outline">Book Now</a>';
-                    echo '</div>';
-                }
-            } else {
-                echo '<p class="no-services">No services available at the moment.</p>';
-            }
-            ?>
+    <section class="services-hero">
+        <div class="container">
+            <h1 style="color: white;">Our Barbers</h1>
+            <p>Meet our team of experienced barbers</p>
         </div>
-    </div>
+    </section>
+
+    <section class="barbers-section">
+        <div class="container">
+            <div class="barbers-grid">
+                <div class="barber-card">
+                    <div class="barber-image">
+                        <img src="https://images.pexels.com/photos/15613465/pexels-photo-15613465/free-photo-of-man-with-beard-holding-scissors.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Barber 1">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 </main>
 
 <?php include 'includes/footer.php'; ?>
 
 <style>
 .services-hero {
-    background-color: #1a365d;
+    background-color:rgb(0, 24, 58);
     color: white;
-    padding: 4rem 0;
+    padding: 2em;
     text-align: center;
 }
 

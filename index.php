@@ -3,13 +3,11 @@ session_start();
 require_once 'config/database.php';
 require_once 'includes/functions.php';
 
-// Define page title
 $page_title = "Home";
 include 'includes/header.php';
 ?>
 
 <main>
-  <!-- Hero Section -->
   <section class="hero">
     <div class="container">
       <div class="hero-content">
@@ -22,24 +20,23 @@ include 'includes/header.php';
     </div>
   </section>
 
-  <!-- Featured Services -->
   <section class="services">
     <div class="container">
       <h2>Our Services</h2>
       <div class="services-grid">
         <?php
-        $sql = "SELECT * FROM Services LIMIT 4";
+        $sql = "SELECT * FROM Services LIMIT 3";
         $result = $conn->query($sql);
 
         if ($result->num_rows > 0) {
           while ($row = $result->fetch_assoc()) {
             echo '<div class="service-card">';
             echo '<div class="service-icon"><i class="fas fa-cut"></i></div>';
-            echo '<h3>' . htmlspecialchars($row['Name']) . '</h3>';
+            echo '<h3>' . $row['Name'] . '</h3>';
             echo '<p>' . htmlspecialchars($row['Description']) . '</p>';
             echo '<div class="service-details">';
             echo '<span class="duration"><i class="far fa-clock"></i> ' . htmlspecialchars($row['Duration']) . ' min</span>';
-            echo '<span class="price">$' . htmlspecialchars($row['Price']) . '</span>';
+            echo '<span class="price">BDT ' . htmlspecialchars($row['Price']) . '</span>';
             echo '</div>';
             echo '<a href="booking.php?service=' . $row['ServiceID'] . '" class="btn btn-outline">Book Now</a>';
             echo '</div>';
@@ -49,59 +46,6 @@ include 'includes/header.php';
       </div>
   </section>
 
-  <!-- Featured Barbers
-  <section class="barbers">
-    <div class="container">
-      <h2>Meet Our Expert Barbers</h2>
-      <div class="barbers-grid">
-        
-        <?php /*
-        $sql = "SELECT UserID, FirstName, LastName, Bio FROM Barbers LIMIT 3";
-        $result = $conn->query($sql);
-
-        if ($result->num_rows > 0) {
-          while ($row = $result->fetch_assoc()) {
-            echo '<div class="barber-card">';
-            echo '<div class="barber-image"><img src="assets/images/barber-' . $row['UserID'] . '.jpg" alt="Barber ' . htmlspecialchars($row['FirstName']) . ' ' . htmlspecialchars($row['LastName']) . '" onerror="this.src=\'assets/images/default-barber.jpg\'"></div>';
-            echo '<h3>' . htmlspecialchars($row['FirstName']) . ' ' . htmlspecialchars($row['LastName']) . '</h3>';
-            echo '<p class="barber-bio">' . htmlspecialchars(substr($row['Bio'], 0, 120)) . '...</p>';
-            
-            // Get average rating
-            $barberID = $row['UserID'];
-            $ratingSQL = "SELECT AVG(Rating) as AverageRating FROM Reviews WHERE BarberID = $barberID";
-            $ratingResult = $conn->query($ratingSQL);
-            $ratingRow = $ratingResult->fetch_assoc();
-            $averageRating = round($ratingRow['AverageRating'], 1);
-            
-            echo '<div class="barber-rating">';
-            echo '<span class="stars">';
-            for ($i = 1; $i <= 5; $i++) {
-              if ($i <= $averageRating) {
-                echo '<i class="fas fa-star"></i>';
-              } elseif ($i - 0.5 <= $averageRating) {
-                echo '<i class="fas fa-star-half-alt"></i>';
-              } else {
-                echo '<i class="far fa-star"></i>';
-              }
-            }
-            echo '</span>';
-            echo '<span class="rating-value">' . $averageRating . '</span>';
-            echo '</div>';
-            
-            echo '<a href="barber.php?id=' . $row['UserID'] . '" class="btn btn-outline">View Profile</a>';
-            echo '</div>';
-          }
-        } */
-        ?> 
-        
-      </div>
-      <div class="text-center mt-4">
-        <a href="barbers.php" class="btn btn-secondary">View All Barbers</a>
-      </div>
-    </div>
-  </section> -->
-
-  <!-- Featured Barbers -->
   <section class="barbers">
     <div class="container">
       <h2>Meet Our Expert Barbers</h2>
@@ -117,7 +61,6 @@ include 'includes/header.php';
             echo '<h3>' . htmlspecialchars($row['FirstName']) . ' ' . htmlspecialchars($row['LastName']) . '</h3>';
             echo '<p class="barber-bio">' . htmlspecialchars(substr($row['Bio'], 0, 120)) . '...</p>';
             
-            // Get average rating
             $barberID = $row['UserID'];
             $ratingSQL = "SELECT AVG(Rating) as AverageRating FROM Reviews WHERE BarberID = $barberID";
             $ratingResult = $conn->query($ratingSQL);
@@ -151,7 +94,6 @@ include 'includes/header.php';
     </div>
   </section>
 
-  <!-- Testimonials -->
   <section class="testimonials">
     <div class="container">
       <h2>What Our Customers Say</h2>
@@ -189,7 +131,6 @@ include 'includes/header.php';
     </div>
   </section>
 
-  <!-- CTA Section -->
   <section class="cta">
     <div class="container">
       <div class="cta-content">
