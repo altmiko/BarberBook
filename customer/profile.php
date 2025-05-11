@@ -26,8 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         setFlashMessage('Last name is required.', 'error');
     } elseif (empty($phone)) {
         setFlashMessage('Phone number is required.', 'error');
+    } elseif (!preg_match('/^[0-9]{11}+$/', $phone)) {
+        setFlashMessage('Phone number must be 11 digits long.', 'error');
     } elseif (empty($email)) {
         setFlashMessage('Email is required.', 'error');
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        setFlashMessage('Invalid email format.', 'error');  
     } else {
         // Update customer information
         $query = "UPDATE Customers SET 

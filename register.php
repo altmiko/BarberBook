@@ -20,6 +20,7 @@ $formData = [
     'email' => '',
     'phone' => '',
     'address' => '',
+    'referral_code' => '',
 ];
 
 // Process registration form
@@ -31,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $formData['email'] = sanitize($_POST['email'] ?? '');
     $formData['phone'] = sanitize($_POST['phone'] ?? '');
     $formData['address'] = sanitize($_POST['address'] ?? '');
+    $formData['referral_code'] = sanitize($_POST['referral_code'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
     
@@ -89,6 +91,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors['confirm_password'] = 'Passwords do not match';
     }
     
+    // Validate referral code
+    if ($formData['user_type'] === 'customer' && !empty($formData['referral_code'])) {
+        $stmt = $conn->prepare("SELECT * FROM Customers WHERE ReferralCode = ?");
+        $stmt->bind_param("s", $formData['referral_code']);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows === 0) {
+            $errors['referral_code'] = 'Invalid referral code';
+        }
+        $referral_customer = $result->fetch_assoc();
+        $referral_customer_id = $referral_customer['CustomerID'];
+        
+    }
+
+
     // Process if no errors
     if (empty($errors)) {
         $hashed_password = hashPassword($password);
@@ -226,6 +243,11 @@ include 'includes/header.php';
                             <div class="error-message"><?php echo $errors['address']; ?></div>
                         <?php endif; ?>
                     </div>
+
+                    <div class="form-group">
+                        <label for="referral_code">Referral Code</label>
+                        <input type="text" id="referral_code" name="referral_code" value="<?php echo htmlspecialchars($formData['referral_code']); ?>" placeholder="Enter referral code if you have one">
+                    </div>
                     
                     <div class="form-row">
                         <div class="form-group">
@@ -257,8 +279,8 @@ include 'includes/header.php';
                     
                     <div class="form-group">
                         <div class="terms-checkbox">
-                            <input type="checkbox" id="terms" name="terms" required>
-                            <label for="terms">I agree to the <a href="terms.php" target="_blank">Terms of Service</a> and <a href="privacy.php" target="_blank">Privacy Policy</a></label>
+                            <input class="terms-checkbox-input" type="checkbox" id="terms" name="terms" required>
+                            <label class="terms-label" for="terms">I agree to the <a href="terms.php" target="_blank">Terms of Service</a> and <a href="privacy.php" target="_blank">Privacy Policy</a></label>
                         </div>
                     </div>
                     
@@ -294,14 +316,19 @@ include 'includes/footer.php';
 }
 
 .terms-checkbox {
+    margin-bottom: 1em;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 8px;
-    margin-bottom: var(--space-2);
 }
 
 .terms-checkbox input {
-    margin-top: 4px;
+    margin: 0;
+    height: 20px;
+}
+
+.terms-label {
+    margin: 0;
 }
 
 .auth-section {
@@ -447,6 +474,7 @@ include 'includes/footer.php';
 .user-type-option input:checked + .user-type-label i {
     color: var(--color-primary);
 }
+
 
 @media (max-width: 576px) {
     .auth-container {

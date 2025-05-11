@@ -52,6 +52,19 @@ if (strpos($_SERVER['PHP_SELF'], '/barber/') !== false || strpos($_SERVER['PHP_S
                 
                 <div class="auth-buttons">
                     <?php if (isLoggedIn()): ?>
+                        <?php
+ 
+                        $user_id = $_SESSION['user_id'];
+                        $user_type = isBarber() ? 'Barbers' : 'Customers';
+                        $name_query = "SELECT FirstName, LastName FROM $user_type WHERE UserID = ?";
+                        $stmt = $conn->prepare($name_query);
+                        $stmt->bind_param("i", $user_id);
+                        $stmt->execute();
+                        $result = $stmt->get_result();
+                        $user = $result->fetch_assoc();
+                        $user_name = $user ? htmlspecialchars($user['FirstName'] . ' ' . $user['LastName']) : '';
+                        ?>
+                        <span class="user-name"><?php echo $user_name; ?></span>
                         <?php if (isBarber()): ?>
                             <a href="<?php echo $base_path; ?>barber/dashboard.php" class="btn btn-secondary">Dashboard</a>
                         <?php else: ?>
@@ -84,6 +97,7 @@ if (strpos($_SERVER['PHP_SELF'], '/barber/') !== false || strpos($_SERVER['PHP_S
         
         <div class="mobile-auth-buttons">
             <?php if (isLoggedIn()): ?>
+                <span class="user-name">Welcome, <?php echo $user_name; ?></span>
                 <?php if (isBarber()): ?>
                     <a href="<?php echo $base_path; ?>barber/dashboard.php" class="btn btn-secondary">Dashboard</a>
                 <?php else: ?>
@@ -101,3 +115,27 @@ if (strpos($_SERVER['PHP_SELF'], '/barber/') !== false || strpos($_SERVER['PHP_S
     <div class="flash-message-container">
         <?php echo displayFlashMessage(); ?>
     </div>
+
+<style>
+.user-name {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-right: 10px auto;
+    font-size: 0.95em;
+    padding: 10px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    
+}
+
+
+@media (max-width: 768px) {
+    .mobile-auth-buttons .user-name {
+        display: block;
+        text-align: center;
+        margin: 10px auto;
+        font-size: 1em;
+        max-width: 200px;
+    }
+}
+</style>

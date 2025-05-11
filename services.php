@@ -11,8 +11,15 @@ $result = $conn->query($sql);
 ?>
 
 <main>
+    <section class="services-hero" style="margin-bottom: 3rem;">
+        <div class="container margin-bottom-20">
+            <h1 style="color: white;">Our Services</h1>
+            <p>Choose from a wide range of services to suit your needs</p>
+        </div>
+    </section>
+
     <div class="container">
-        <h1>Our Services</h1>
+    
         <div class="services-grid">
             <?php
             if ($result && $result->num_rows > 0) {
@@ -35,6 +42,8 @@ $result = $conn->query($sql);
         </div>
     </div>
 </main>
+
+<div class="spacer" style="margin-top: 3rem;"></div>
 
 <?php include 'includes/footer.php'; ?>
 
@@ -149,8 +158,5 @@ $result = $conn->query($sql);
 }
 </style>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Add any JavaScript functionality here
-});
+
 </script> 

@@ -27,13 +27,32 @@ $todayQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, s.Name 
               JOIN ApptContains ac ON a.AppointmentID = ac.AppointmentID 
               JOIN Services s ON ac.ServiceID = s.ServiceID 
               JOIN BarberHas bh ON a.AppointmentID = bh.AppointmentID 
-              WHERE bh.BarberID = ? AND DATE(a.StartTime) = CURDATE() AND a.Status != 'cancelled' 
+              WHERE bh.BarberID = ? AND DATE(a.StartTime) = CURDATE() AND a.Status != 'Cancelled' 
               ORDER BY a.StartTime ASC";
 
 $todayStmt = $conn->prepare($todayQuery);
 $todayStmt->bind_param("i", $barber_id);
 $todayStmt->execute();
 $todayResult = $todayStmt->get_result();
+
+// Fetch future appointments
+$futureQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, s.Name as ServiceName, 
+               c.FirstName as CustomerFirstName, c.LastName as CustomerLastName, p.Amount
+               FROM Appointments a, Services s, Customers c, Payments p, BarberHas bh, ApptContains ac
+               WHERE bh.AppointmentID = a.AppointmentID
+               AND a.CustomerID = c.UserID
+               AND a.PaymentID = p.PaymentID
+               AND a.AppointmentID = ac.AppointmentID
+               AND ac.ServiceID = s.ServiceID
+               AND bh.BarberID = ?
+               AND a.Status != 'cancelled'
+               AND a.StartTime > CURDATE()
+               ORDER BY a.StartTime ASC";
+
+$futureStmt = $conn->prepare($futureQuery);
+$futureStmt->bind_param("i", $barber_id);
+$futureStmt->execute();
+$futureResult = $futureStmt->get_result();
 
 // Fetch recent reviews
 $reviewsQuery = "SELECT r.ReviewID, r.Rating, r.Comments, r.CustomerID, 
@@ -71,7 +90,7 @@ include '../includes/header.php';
     <section class="dashboard-section">
         <div class="container">
             <div class="dashboard-header">
-                <h1>Barber Dashboard</h1>
+                <h1 style="font-size: 2.4rem;">Barber Dashboard</h1>
                 <p>Welcome back, <?php echo htmlspecialchars($barber['FirstName'] . ' ' . $barber['LastName']); ?>!</p>
             </div>
             
@@ -177,7 +196,7 @@ include '../includes/header.php';
                                             $timeClass .= ' completed';
                                         }
                                         
-                                        $slotContent = '<a href="appointment-details.php?id=' . $appt['id'] . '" class="slot-details">';
+
                                         $slotContent .= '<span class="slot-customer">' . htmlspecialchars($appt['customer']) . '</span>';
                                         $slotContent .= '<span class="slot-service">' . htmlspecialchars($appt['service']) . '</span>';
                                         $slotContent .= '</a>';
@@ -224,7 +243,69 @@ include '../includes/header.php';
                                 <div class="appointments-list">
                                     <?php while ($appointment = $todayResult->fetch_assoc()): ?>
                                         <div class="appointment-card">
+                                            
+                                            
+                                            <div class="appointment-details">
+                                                <h3><?php echo htmlspecialchars($appointment['ServiceName']); ?></h3>
+                                                <p class="customer-name">
+                                                    <i class="fas fa-user"></i>
+                                                    <?php echo htmlspecialchars($appointment['CustomerFirstName'] . ' ' . $appointment['CustomerLastName']); ?>
+                                                </p>
+                                                <div class="appointment-status">
+                                                    <span class="status-badge status-<?php echo strtolower($appointment['Status']); ?>">
+                                                        <?php echo ucfirst($appointment['Status']); ?>
+                                                    </span>
+                                                    <span class="price">BDT <?php echo $appointment['Amount']; ?></span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="appointment-actions">
+                                                <form method="POST" action="cancel-appointment.php" 
+                                                      onsubmit="return handleCancelAppointment(this);">
+                                                    <input type="hidden" name="appointment_id" value="<?php echo $appointment['AppointmentID']; ?>">
+                                                    <button type="submit" name="cancel_appointment" class="btn btn-danger btn-sm">Cancel</button>
+                                                </form>
+                                                <?php if ($appointment['Status'] === 'Scheduled'): ?>
+                                                    <a href="mark-completed.php?id=<?php echo $appointment['AppointmentID']; ?>" class="btn btn-primary btn-sm">Complete</a>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    <?php endwhile; ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">
+                                        <i class="fas fa-calendar-day"></i>
+                                    </div>
+                                    <h3>No Appointments Today</h3>
+                                    <p>You don't have any appointments scheduled for today.</p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Appointments -->
+                    <div class="section-card">
+                        <div class="card-header">
+                            <h2>Upcoming Appointments</h2>
+                            <a href="appointments.php?date=upcoming" class="view-all">View All</a>
+                        </div>
+                        
+                        <div class="card-content">
+                            <?php
+                            // Reset pointer to beginning of result set
+                            $futureResult->data_seek(0);
+                            
+                            if ($futureResult->num_rows > 0):
+                            ?>
+                                <div class="appointments-list">
+                                    <?php while ($appointment = $futureResult->fetch_assoc()): ?>
+                                        <div class="appointment-card">
                                             <div class="appointment-time">
+                                                <div class="date-display">
+                                                    <span class="month"><?php echo date('M', strtotime($appointment['StartTime'])); ?></span>
+                                                    <span class="day"><?php echo date('d', strtotime($appointment['StartTime'])); ?></span>
+                                                </div>
                                                 <span class="time"><?php echo date('g:i A', strtotime($appointment['StartTime'])); ?></span>
                                                 <span class="duration">
                                                     <?php
@@ -246,13 +327,16 @@ include '../includes/header.php';
                                                     <span class="status-badge status-<?php echo strtolower($appointment['Status']); ?>">
                                                         <?php echo ucfirst($appointment['Status']); ?>
                                                     </span>
-                                                    <span class="price">$<?php echo $appointment['Amount']; ?></span>
+                                                    <span class="price">BDT <?php echo $appointment['Amount']; ?></span>
                                                 </div>
                                             </div>
                                             
                                             <div class="appointment-actions">
-                                                <a href="appointment-details.php?id=<?php echo $appointment['AppointmentID']; ?>" class="btn btn-outline btn-sm">Details</a>
-                                                
+                                                <form method="POST" action="cancel-appointment.php" 
+                                                      onsubmit="return handleCancelAppointment(this);">
+                                                    <input type="hidden" name="appointment_id" value="<?php echo $appointment['AppointmentID']; ?>">
+                                                    <button type="submit" name="cancel_appointment" class="btn btn-danger btn-sm">Cancel</button>
+                                                </form>
                                                 <?php if ($appointment['Status'] === 'scheduled'): ?>
                                                     <a href="mark-completed.php?id=<?php echo $appointment['AppointmentID']; ?>" class="btn btn-primary btn-sm">Complete</a>
                                                 <?php endif; ?>
@@ -331,6 +415,63 @@ include '../includes/header.php';
 <?php
 include '../includes/footer.php';
 ?>
+
+<script>
+function handleCancelAppointment(form) {
+    if (confirm('Are you sure you want to cancel this appointment?')) {
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showMessage(data.message, 'success');
+                // Reload the page after a short delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                // Show error message
+                showMessage(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            showMessage('An error occurred while cancelling the appointment.', 'error');
+        });
+        
+        return false; // Prevent form submission
+    }
+    return false; // Prevent form submission if not confirmed
+}
+
+function showMessage(message, type) {
+    // Create message element
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    messageDiv.style.position = 'fixed';
+    messageDiv.style.top = '20px';
+    messageDiv.style.right = '20px';
+    messageDiv.style.zIndex = '9999';
+    messageDiv.style.minWidth = '300px';
+    messageDiv.style.textAlign = 'center';
+    
+    // Add message content
+    messageDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Add to page
+    document.body.appendChild(messageDiv);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        messageDiv.remove();
+    }, 3000);
+}
+</script>
 
 <style>
 /* Dashboard Styles */
@@ -641,29 +782,7 @@ include '../includes/footer.php';
     background-color: #1a365d;
     color: white;
     padding: 1rem;
-    min-width: 100px;
-    text-align: center;
-}
-
-.appointment-time .time {
-    font-size: 1.6rem;
-    font-weight: 600;
-}
-
-.appointment-time .duration {
-    font-size: 1.2rem;
-    opacity: 0.8;
-}
-
-.appointment-date {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background-color: #1a365d;
-    color: white;
-    padding: 1rem;
-    min-width: 100px;
+    min-width: 120px;
     text-align: center;
 }
 
@@ -684,6 +803,17 @@ include '../includes/footer.php';
     font-size: 2rem;
     font-weight: 700;
     line-height: 1;
+}
+
+.appointment-time .time {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin: 4px 0;
+}
+
+.appointment-time .duration {
+    font-size: 1.2rem;
+    opacity: 0.8;
 }
 
 .appointment-details {
@@ -910,4 +1040,40 @@ include '../includes/footer.php';
         font-size: 1.4rem;
     }
 }
+
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.alert-dismissible {
+    padding-right: 40px;
+}
+
+.btn-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 15px;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}
+
+
 </style>

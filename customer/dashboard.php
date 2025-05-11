@@ -119,7 +119,7 @@ include '../includes/header.php';
                         <h3>Notifications</h3>
                         <?php
                         // Count unread notifications
-                        $unreadQuery = "SELECT COUNT(*) as count FROM Notifications WHERE CustomerID = ? AND Status = 'pending'";
+                        $unreadQuery = "SELECT COUNT(*) as count FROM Notifications WHERE CustomerID = ? AND Status = ''";
                         $unreadStmt = $conn->prepare($unreadQuery);
                         $unreadStmt->bind_param("i", $customer_id);
                         $unreadStmt->execute();
@@ -205,22 +205,12 @@ include '../includes/header.php';
                                                     <span class="status-badge status-<?php echo strtolower($appointment['Status']); ?>">
                                                         <?php echo ucfirst($appointment['Status']); ?>
                                                     </span>
-                                                    <span class="price">$<?php echo $appointment['Amount']; ?></span>
+                                                    <span class="price">BDT <?php echo $appointment['Amount']; ?></span>
                                                 </div>
                                             </div>
                                             
                                             <div class="appointment-actions">
-                                                <a href="appointment-details.php?id=<?php echo $appointment['AppointmentID']; ?>" class="btn btn-outline btn-sm">Details</a>
-                                                
-                                                <?php
-                                                // Only show cancel button if appointment is not within 24 hours
-                                                $appointmentTime = new DateTime($appointment['StartTime']);
-                                                $now = new DateTime();
-                                                $interval = $now->diff($appointmentTime);
-                                                $hoursUntilAppointment = ($interval->days * 24) + $interval->h;
-                                                
-                                                if ($hoursUntilAppointment > 24 && $appointment['Status'] === 'scheduled'):
-                                                ?>
+                                                <?php if ($appointment['Status'] !== 'Cancelled'): ?>
                                                     <a href="cancel-appointment.php?id=<?php echo $appointment['AppointmentID']; ?>" class="btn btn-outline btn-sm text-error cancel-btn">Cancel</a>
                                                 <?php endif; ?>
                                             </div>
@@ -270,14 +260,16 @@ include '../includes/header.php';
                                                     <span class="status-badge status-<?php echo strtolower($appointment['Status']); ?>">
                                                         <?php echo ucfirst($appointment['Status']); ?>
                                                     </span>
-                                                    <span class="price">$<?php echo $appointment['Amount']; ?></span>
+                                                    <span class="price">BDT <?php echo $appointment['Amount']; ?></span>
                                                 </div>
                                             </div>
                                             
                                             <div class="appointment-actions">
-                                                <a href="appointment-details.php?id=<?php echo $appointment['AppointmentID']; ?>" class="btn btn-outline btn-sm">Details</a>
+                                                <?php if ($appointment['Status'] !== 'Cancelled'): ?>
+                                                    <a href="cancel-appointment.php?id=<?php echo $appointment['AppointmentID']; ?>" class="btn btn-outline btn-sm text-error cancel-btn">Cancel</a>
+                                                <?php endif; ?>
                                                 
-                                                <?php if (empty($appointment['ReviewID']) && $appointment['Status'] === 'completed'): ?>
+                                                <?php if (empty($appointment['ReviewID']) && $appointment['Status'] === 'Completed'): ?>
                                                     <a href="leave-review.php?barber=<?php echo $appointment['BarberFirstName'] . ' ' . $appointment['BarberLastName']; ?>&appointment=<?php echo $appointment['AppointmentID']; ?>" class="btn btn-secondary btn-sm">Leave Review</a>
                                                 <?php elseif (!empty($appointment['ReviewID'])): ?>
                                                     <div class="review-rating">

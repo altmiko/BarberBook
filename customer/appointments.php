@@ -21,20 +21,105 @@ $customerStmt->execute();
 $customerResult = $customerStmt->get_result();
 $customer = $customerResult->fetch_assoc();
 
-// Get upcoming appointments
-// TODO: Add SQL query to fetch upcoming appointments
-$upcomingAppointments = [];
+// Get all upcoming appointments
+$upcomingQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, s.Name as ServiceName, 
+                   b.FirstName as BarberFirstName, b.LastName as BarberLastName, p.Amount,
+                   s.Duration, s.Price
+                  FROM Appointments a 
+                  JOIN Payments p ON a.PaymentID = p.PaymentID 
+                  JOIN ApptContains ac ON a.AppointmentID = ac.AppointmentID 
+                  JOIN Services s ON ac.ServiceID = s.ServiceID 
+                  JOIN BarberHas bh ON a.AppointmentID = bh.AppointmentID 
+                  JOIN Barbers b ON bh.BarberID = b.UserID 
+                  WHERE a.CustomerID = ? AND a.StartTime > NOW() 
+                  ORDER BY 
+                    CASE a.Status 
+                        WHEN 'Scheduled' THEN 1 
+                        WHEN 'Completed' THEN 2 
+                        WHEN 'Cancelled' THEN 3 
+                        ELSE 4 
+                    END,
+                    a.StartTime ASC";
 
-// Get past appointments
-// TODO: Add SQL query to fetch past appointments
-$pastAppointments = [];
+$upcomingStmt = $conn->prepare($upcomingQuery);
+$upcomingStmt->bind_param("i", $customer_id);
+$upcomingStmt->execute();
+$upcomingResult = $upcomingStmt->get_result();
+$upcomingAppointments = $upcomingResult->fetch_all(MYSQLI_ASSOC);
+
+// Get all past appointments
+$pastQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, s.Name as ServiceName, 
+              b.FirstName as BarberFirstName, b.LastName as BarberLastName, p.Amount,
+              s.Duration, s.Price, r.ReviewID as has_review
+              FROM Appointments a 
+              JOIN Payments p ON a.PaymentID = p.PaymentID 
+              JOIN ApptContains ac ON a.AppointmentID = ac.AppointmentID 
+              JOIN Services s ON ac.ServiceID = s.ServiceID 
+              JOIN BarberHas bh ON a.AppointmentID = bh.AppointmentID 
+              JOIN Barbers b ON bh.BarberID = b.UserID 
+              LEFT JOIN Reviews r ON r.BarberID = b.UserID AND r.CustomerID = a.CustomerID
+              WHERE a.CustomerID = ? AND a.EndTime < NOW() 
+              ORDER BY a.EndTime DESC";
+
+$pastStmt = $conn->prepare($pastQuery);
+$pastStmt->bind_param("i", $customer_id);
+$pastStmt->execute();
+$pastResult = $pastStmt->get_result();
+$pastAppointments = $pastResult->fetch_all(MYSQLI_ASSOC);
 
 // Handle appointment cancellation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_appointment'])) {
     $appointmentId = (int) $_POST['appointment_id'];
     
-    // TODO: Add SQL query to cancel appointment
-    // Should update the appointment status to 'cancelled'
+    // Debug information
+    error_log("Attempting to cancel appointment ID: " . $appointmentId);
+    error_log("Customer ID: " . $customer_id);
+    
+    // First check if the appointment exists and belongs to the customer
+    $checkQuery = "SELECT Status FROM Appointments WHERE AppointmentID = ? AND CustomerID = ?";
+    $checkStmt = $conn->prepare($checkQuery);
+    $checkStmt->bind_param("ii", $appointmentId, $customer_id);
+    $checkStmt->execute();
+    $checkResult = $checkStmt->get_result();
+    
+    if ($checkResult->num_rows > 0) {
+        $appointment = $checkResult->fetch_assoc();
+        error_log("Current appointment status: " . $appointment['Status']);
+        
+        // Only allow cancellation if the appointment is not already cancelled or completed
+        if ($appointment['Status'] !== 'Cancelled' && $appointment['Status'] !== 'Completed') {
+            // Update appointment status
+            $updateQuery = "UPDATE Appointments SET Status = 'Cancelled' WHERE AppointmentID = ?";
+            $updateStmt = $conn->prepare($updateQuery);
+            $updateStmt->bind_param("i", $appointmentId);
+            
+            if ($updateStmt->execute()) {
+                error_log("Successfully updated appointment status to Cancelled");
+                // Create notification for the customer
+                $notificationQuery = "INSERT INTO Notifications (RecipientEmail, Status, Subject, Body, CustomerID) 
+                                    SELECT Email, 'pending', 'Appointment Cancelled', 
+                                    CONCAT('Your appointment scheduled for ', DATE_FORMAT(StartTime, '%M %d, %Y at %h:%i %p'), ' has been cancelled.'), 
+                                    CustomerID 
+                                    FROM Appointments a 
+                                    JOIN Customers c ON a.CustomerID = c.UserID 
+                                    WHERE a.AppointmentID = ?";
+                $notificationStmt = $conn->prepare($notificationQuery);
+                $notificationStmt->bind_param("i", $appointmentId);
+                $notificationStmt->execute();
+                
+                $success = true;
+            } else {
+                error_log("Failed to update appointment: " . $conn->error);
+                $errors['system'] = "Failed to update appointment status: " . $conn->error;
+            }
+        } else {
+            error_log("Cannot cancel - appointment is already " . $appointment['Status']);
+            $errors['system'] = "Cannot cancel an appointment that is already " . strtolower($appointment['Status']);
+        }
+    } else {
+        error_log("Invalid appointment ID or not owned by customer");
+        $errors['system'] = "Invalid appointment ID";
+    }
     
     if ($success) {
         setFlashMessage('Appointment cancelled successfully.', 'success');
@@ -76,40 +161,40 @@ include '../includes/header.php';
                             <?php foreach ($upcomingAppointments as $appointment): ?>
                                 <div class="appointment-card">
                                     <div class="appointment-header">
-                                        <h3><?php echo htmlspecialchars($appointment['service_name']); ?></h3>
-                                        <span class="status <?php echo strtolower($appointment['status']); ?>">
-                                            <?php echo ucfirst($appointment['status']); ?>
+                                        <h3><?php echo htmlspecialchars($appointment['ServiceName']); ?></h3>
+                                        <span class="status <?php echo strtolower($appointment['Status']); ?>">
+                                            <?php echo ucfirst($appointment['Status']); ?>
                                         </span>
                                     </div>
                                     
                                     <div class="appointment-details">
                                         <div class="detail-item">
                                             <i class="fas fa-calendar"></i>
-                                            <span><?php echo date('F j, Y', strtotime($appointment['date'])); ?></span>
+                                            <span><?php echo date('F j, Y', strtotime($appointment['StartTime'])); ?></span>
                                         </div>
                                         <div class="detail-item">
                                             <i class="fas fa-clock"></i>
-                                            <span><?php echo date('g:i A', strtotime($appointment['time'])); ?></span>
+                                            <span><?php echo date('g:i A', strtotime($appointment['StartTime'])); ?></span>
                                         </div>
                                         <div class="detail-item">
                                             <i class="fas fa-user"></i>
-                                            <span><?php echo htmlspecialchars($appointment['barber_name']); ?></span>
+                                            <span><?php echo htmlspecialchars($appointment['BarberFirstName'] . ' ' . $appointment['BarberLastName']); ?></span>
                                         </div>
                                         <div class="detail-item">
                                             <i class="fas fa-clock"></i>
-                                            <span><?php echo $appointment['duration']; ?> minutes</span>
+                                            <span><?php echo $appointment['Duration']; ?> minutes</span>
                                         </div>
                                         <div class="detail-item">
                                             <i class="fas fa-tag"></i>
-                                            <span>BDT <?php echo $appointment['price']; ?></span>
+                                            <span>BDT <?php echo $appointment['Amount']; ?></span>
                                         </div>
                                     </div>
                                     
-                                    <?php if ($appointment['status'] === 'scheduled'): ?>
+                                    <?php if ($appointment['Status'] === 'Scheduled'): ?>
                                         <div class="appointment-actions">
                                             <form method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" 
                                                   onsubmit="return confirm('Are you sure you want to cancel this appointment?');">
-                                                <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                <input type="hidden" name="appointment_id" value="<?php echo $appointment['AppointmentID']; ?>">
                                                 <button type="submit" name="cancel_appointment" class="btn btn-danger">Cancel Appointment</button>
                                             </form>
                                         </div>
@@ -133,38 +218,38 @@ include '../includes/header.php';
                             <?php foreach ($pastAppointments as $appointment): ?>
                                 <div class="appointment-card">
                                     <div class="appointment-header">
-                                        <h3><?php echo htmlspecialchars($appointment['service_name']); ?></h3>
-                                        <span class="status <?php echo strtolower($appointment['status']); ?>">
-                                            <?php echo ucfirst($appointment['status']); ?>
+                                        <h3><?php echo htmlspecialchars($appointment['ServiceName']); ?></h3>
+                                        <span class="status <?php echo strtolower($appointment['Status']); ?>">
+                                            <?php echo ucfirst($appointment['Status']); ?>
                                         </span>
                                     </div>
                                     
                                     <div class="appointment-details">
                                         <div class="detail-item">
                                             <i class="fas fa-calendar"></i>
-                                            <span><?php echo date('F j, Y', strtotime($appointment['date'])); ?></span>
+                                            <span><?php echo date('F j, Y', strtotime($appointment['StartTime'])); ?></span>
                                         </div>
                                         <div class="detail-item">
                                             <i class="fas fa-clock"></i>
-                                            <span><?php echo date('g:i A', strtotime($appointment['time'])); ?></span>
+                                            <span><?php echo date('g:i A', strtotime($appointment['StartTime'])); ?></span>
                                         </div>
                                         <div class="detail-item">
                                             <i class="fas fa-user"></i>
-                                            <span><?php echo htmlspecialchars($appointment['barber_name']); ?></span>
+                                            <span><?php echo htmlspecialchars($appointment['BarberFirstName'] . ' ' . $appointment['BarberLastName']); ?></span>
                                         </div>
                                         <div class="detail-item">
                                             <i class="fas fa-clock"></i>
-                                            <span><?php echo $appointment['duration']; ?> minutes</span>
+                                            <span><?php echo $appointment['Duration']; ?> minutes</span>
                                         </div>
                                         <div class="detail-item">
                                             <i class="fas fa-tag"></i>
-                                            <span>BDT <?php echo $appointment['price']; ?></span>
+                                            <span>BDT <?php echo $appointment['Amount']; ?></span>
                                         </div>
                                     </div>
                                     
-                                    <?php if ($appointment['status'] === 'completed' && !$appointment['has_review']): ?>
+                                    <?php if ($appointment['Status'] === 'Completed' && !$appointment['has_review']): ?>
                                         <div class="appointment-actions">
-                                            <a href="../review.php?appointment_id=<?php echo $appointment['id']; ?>" class="btn btn-primary">Leave a Review</a>
+                                            <a href="../review.php?appointment_id=<?php echo $appointment['AppointmentID']; ?>" class="btn btn-primary">Leave a Review</a>
                                         </div>
                                     <?php endif; ?>
                                 </div>
@@ -231,25 +316,30 @@ include '../includes/header.php';
 }
 
 .status {
-    padding: 4px 8px;
+    padding: 4px 12px;
     border-radius: var(--radius-sm);
     font-size: 1.2rem;
     font-weight: 500;
+    border: 1px solid;
 }
 
 .status.scheduled {
-    background-color: var(--color-primary-light);
-    color: var(--color-primary);
+    background-color: var(--color-accent-light);
+    color: var(--color-accent);
+    border-color: var(--color-accent);
 }
 
 .status.completed {
     background-color: var(--color-success-light);
     color: var(--color-success);
+    border-color: var(--color-success);
 }
 
 .status.cancelled {
-    background-color: var(--color-danger-light);
+    background-color:rgb(219, 11, 11);
     color: var(--color-danger);
+    border-color: var(--color-danger);
+    color: white;
 }
 
 .appointment-details {

@@ -15,25 +15,21 @@ $barber_id = $_SESSION['user_id'];
 $rating = isset($_GET['rating']) ? (int)$_GET['rating'] : 0;
 
 // Build the query based on rating filter
-$reviewsQuery = "SELECT r.ReviewID, r.Rating, r.Comments, r.CreatedAt, 
-                c.FirstName as CustomerFirstName, c.LastName as CustomerLastName,
-                a.AppointmentID, s.Name as ServiceName
+$reviewsQuery = "SELECT r.ReviewID, r.Rating, r.Comments, 
+                c.FirstName as CustomerFirstName, c.LastName as CustomerLastName
                 FROM Reviews r 
                 JOIN Customers c ON r.CustomerID = c.UserID 
-                JOIN Appointments a ON r.AppointmentID = a.AppointmentID
-                JOIN ApptContains ac ON a.AppointmentID = ac.AppointmentID
-                JOIN Services s ON ac.ServiceID = s.ServiceID
                 WHERE r.BarberID = ? ";
 
-if ($rating > 0) {
+if ($rating > 0 && $rating <= 5) {
     $reviewsQuery .= "AND r.Rating = ? ";
 }
 
-$reviewsQuery .= "ORDER BY r.CreatedAt DESC";
+$reviewsQuery .= "ORDER BY r.ReviewID DESC";
 
 $reviewsStmt = $conn->prepare($reviewsQuery);
 
-if ($rating > 0) {
+if ($rating > 0 && $rating <= 5) {
     $reviewsStmt->bind_param("ii", $barber_id, $rating);
 } else {
     $reviewsStmt->bind_param("i", $barber_id);
@@ -46,11 +42,11 @@ $reviewsResult = $reviewsStmt->get_result();
 $statsQuery = "SELECT 
                 ROUND(AVG(Rating), 1) as avgRating,
                 COUNT(*) as totalReviews,
-                SUM(CASE WHEN Rating = 5 THEN 1 ELSE 0 END) as fiveStar,
-                SUM(CASE WHEN Rating = 4 THEN 1 ELSE 0 END) as fourStar,
-                SUM(CASE WHEN Rating = 3 THEN 1 ELSE 0 END) as threeStar,
-                SUM(CASE WHEN Rating = 2 THEN 1 ELSE 0 END) as twoStar,
-                SUM(CASE WHEN Rating = 1 THEN 1 ELSE 0 END) as oneStar
+                SUM(CASE WHEN Rating = 5 THEN 1 ELSE 0 END) as '5Star',
+                SUM(CASE WHEN Rating = 4 THEN 1 ELSE 0 END) as '4Star',
+                SUM(CASE WHEN Rating = 3 THEN 1 ELSE 0 END) as '3Star',
+                SUM(CASE WHEN Rating = 2 THEN 1 ELSE 0 END) as '2Star',
+                SUM(CASE WHEN Rating = 1 THEN 1 ELSE 0 END) as '1Star'
                 FROM Reviews 
                 WHERE BarberID = ?";
 
@@ -121,8 +117,7 @@ include '../includes/header.php';
                                             ?>
                                         </div>
                                         <div class="customer-details">
-                                            <h4><?php echo htmlspecialchars($review['CustomerFirstName'] . ' ' . $review['CustomerLastName']); ?></h4>
-                                            <span class="service-name"><?php echo htmlspecialchars($review['ServiceName']); ?></span>
+                                            <h4><?php echo htmlspecialchars($review['CustomerFirstName'] . ' ' . $review['CustomerLastName']); ?> </h4>
                                         </div>
                                     </div>
                                     <div class="review-rating">
@@ -139,8 +134,7 @@ include '../includes/header.php';
                                     <p><?php echo htmlspecialchars($review['Comments']); ?></p>
                                 </div>
                                 <div class="review-footer">
-                                    <span class="review-date"><?php echo date('F j, Y', strtotime($review['CreatedAt'])); ?></span>
-                                    <a href="appointment-details.php?id=<?php echo $review['AppointmentID']; ?>" class="btn btn-outline btn-sm">View Appointment</a>
+                                    <span class="review-date">Review #<?php echo $review['ReviewID']; ?></span>
                                 </div>
                             </div>
                         <?php endwhile; ?>
@@ -309,11 +303,6 @@ include '../includes/header.php';
 .customer-details h4 {
     margin: 0 0 0.5rem;
     font-size: 1.8rem;
-}
-
-.service-name {
-    color: #666;
-    font-size: 1.4rem;
 }
 
 .review-rating {
