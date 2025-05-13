@@ -18,9 +18,28 @@ $nameStmt->bind_param("i", $customer_id);
 $nameStmt->execute();
 $customerName = $nameStmt->get_result()->fetch_assoc();
 
+// Fetch today's appointments
+$todayQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, s.Name as ServiceName, 
+                b.FirstName as BarberFirstName, b.LastName as BarberLastName, p.Amount, p.PayMethod, p.PayStatus
+                FROM Appointments a 
+                JOIN Payments p ON a.PaymentID = p.PaymentID 
+                JOIN ApptContains ac ON a.AppointmentID = ac.AppointmentID 
+                JOIN Services s ON ac.ServiceID = s.ServiceID 
+                JOIN BarberHas bh ON a.AppointmentID = bh.AppointmentID 
+                JOIN Barbers b ON bh.BarberID = b.UserID 
+                WHERE a.CustomerID = ? AND DATE(a.StartTime) = CURDATE() AND a.Status != 'cancelled' 
+                ORDER BY a.StartTime ASC 
+                LIMIT 5";
+
+$todayStmt = $conn->prepare($todayQuery);
+$todayStmt->bind_param("i", $customer_id);
+$todayStmt->execute();
+$todayResult = $todayStmt->get_result();
+
+
 // Fetch upcoming appointments
 $upcomingQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, s.Name as ServiceName, 
-                   b.FirstName as BarberFirstName, b.LastName as BarberLastName, p.Amount 
+                   b.FirstName as BarberFirstName, b.LastName as BarberLastName, p.Amount, p.PayMethod, p.PayStatus
                   FROM Appointments a 
                   JOIN Payments p ON a.PaymentID = p.PaymentID 
                   JOIN ApptContains ac ON a.AppointmentID = ac.AppointmentID 
@@ -38,7 +57,7 @@ $upcomingResult = $upcomingStmt->get_result();
 
 // Fetch recent past appointments
 $pastQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, s.Name as ServiceName, 
-              b.FirstName as BarberFirstName, b.LastName as BarberLastName, p.Amount,
+              b.FirstName as BarberFirstName, b.LastName as BarberLastName, p.Amount, p.PayMethod, p.PayStatus,
               r.ReviewID, r.Rating
               FROM Appointments a 
               JOIN Payments p ON a.PaymentID = p.PaymentID 
@@ -55,18 +74,6 @@ $pastStmt = $conn->prepare($pastQuery);
 $pastStmt->bind_param("i", $customer_id);
 $pastStmt->execute();
 $pastResult = $pastStmt->get_result();
-
-// Fetch notifications
-$notificationsQuery = "SELECT NotificationID, Subject, SentAt, Status 
-                      FROM Notifications 
-                      WHERE CustomerID = ? 
-                      ORDER BY SentAt DESC 
-                      LIMIT 5";
-
-$notificationsStmt = $conn->prepare($notificationsQuery);
-$notificationsStmt->bind_param("i", $customer_id);
-$notificationsStmt->execute();
-$notificationsResult = $notificationsStmt->get_result();
 
 // Define page title
 $page_title = "Customer Dashboard";
@@ -130,7 +137,8 @@ include '../includes/header.php';
                     </div>
                 </div>
             </div>
-            
+  
+
             <div class="dashboard-content">
                 <div class="dashboard-sidebar">
                     <div class="dashboard-nav">
@@ -147,11 +155,8 @@ include '../includes/header.php';
                             <span>My Reviews</span>
                         </a>
                         <a href="notifications.php" class="nav-item">
-                            <i class="fas fa-bell"></i>
-                            <span>Notifications</span>
-                            <?php if ($unreadCount > 0): ?>
-                                <span class="badge"><?php echo $unreadCount; ?></span>
-                            <?php endif; ?>
+                            <i class="fas fa-envelope"></i>
+                            <span>Email Notifications</span>
                         </a>
                         <a href="profile.php" class="nav-item">
                             <i class="fas fa-user"></i>
@@ -167,7 +172,86 @@ include '../includes/header.php';
                 </div>
                 
                 <div class="dashboard-main">
-                    <div class="section-card">
+                <div class="section-card">
+                        <div class="card-header">
+                            <h2>Today's Appointments</h2>
+                            <a href="appointments.php" class="view-all">View All</a>
+                        </div>
+                        
+                        <div class="card-content">
+                            <?php if ($todayResult->num_rows > 0): ?>
+                                <div class="appointments-list">
+                                    <?php while ($appointment = $todayResult->fetch_assoc()): ?>
+                                        <div class="appointment-card">
+                                            <div class="appointment-date">
+                                                <div class="date-display">
+                                                    <span class="month"><?php echo date('M', strtotime($appointment['StartTime'])); ?></span>
+                                                    <span class="day"><?php echo date('d', strtotime($appointment['StartTime'])); ?></span>
+                                                </div>
+                                                <span class="time"><?php echo date('g:i A', strtotime($appointment['StartTime'])); ?></span>
+                                            </div>
+                                            
+                                            <div class="appointment-details">
+                                                <h3><?php echo htmlspecialchars($appointment['ServiceName']); ?></h3>
+                                                <p>
+                                                    <i class="fas fa-user-alt"></i> 
+                                                    <?php echo htmlspecialchars($appointment['BarberFirstName'] . ' ' . $appointment['BarberLastName']); ?>
+                                                </p>
+                                                <p>
+                                                    <i class="fas fa-clock"></i>
+                                                    <?php
+                                                    $start = new DateTime($appointment['StartTime']);
+                                                    $end = new DateTime($appointment['EndTime']);
+                                                    $duration = $start->diff($end);
+                                                    echo $duration->format('%h hr %i min');
+                                                    ?>
+                                                </p>
+                                                <div class="appointment-status">
+                                                    <div class="status-info">
+                                                        <span class="status-badge status-<?php echo strtolower($appointment['Status']); ?>">
+                                                            <?php echo ucfirst($appointment['Status']); ?>
+                                                        </span>
+                                                        <span class="payment-info">
+                                                            <i class="fas fa-credit-card"></i>
+                                                            <?php echo $appointment['PayMethod']; ?>
+                                                            <?php if ($appointment['PayStatus'] === 'Pending'): ?>
+                                                                <span class="payment-status pending">(Pending)</span>
+                                                            <?php elseif ($appointment['PayStatus'] === 'Completed'): ?>
+                                                                <span class="payment-status paid">(Paid)</span>
+                                                                <?php if (!empty($appointment['TransactionID'])): ?>
+                                                                    <span class="transaction-id">#<?php echo htmlspecialchars($appointment['TransactionID']); ?></span>
+                                                                <?php endif; ?>
+                                                            <?php endif; ?>
+                                                        </span>
+                                                    </div>
+                                                    <span class="price">BDT <?php echo $appointment['Amount']; ?></span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="appointment-actions">
+                                                <?php if ($appointment['Status'] !== 'Cancelled' && $appointment['Status'] !== 'Completed'): ?>
+                                                    <a href="javascript:void(0)" onclick="confirmCancel(<?php echo $appointment['AppointmentID']; ?>, '<?php echo htmlspecialchars($appointment['ServiceName']); ?>', '<?php echo date('g:i A', strtotime($appointment['StartTime'])); ?>')" class="btn btn-outline btn-sm text-error cancel-btn">Cancel</a>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    <?php endwhile; ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">
+                                        <i class="fas fa-calendar"></i>
+                                    </div>
+                                    <h3>No Upcoming Appointments</h3>
+                                    <p>You don't have any appointments scheduled.</p>
+                                    <a href="../booking.php" class="btn btn-primary">Book Now</a>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+
+
+                        <div class="section-card">
                         <div class="card-header">
                             <h2>Upcoming Appointments</h2>
                             <a href="appointments.php" class="view-all">View All</a>
@@ -202,16 +286,30 @@ include '../includes/header.php';
                                                     ?>
                                                 </p>
                                                 <div class="appointment-status">
-                                                    <span class="status-badge status-<?php echo strtolower($appointment['Status']); ?>">
-                                                        <?php echo ucfirst($appointment['Status']); ?>
-                                                    </span>
+                                                    <div class="status-info">
+                                                        <span class="status-badge status-<?php echo strtolower($appointment['Status']); ?>">
+                                                            <?php echo ucfirst($appointment['Status']); ?>
+                                                        </span>
+                                                        <span class="payment-info">
+                                                            <i class="fas fa-credit-card"></i>
+                                                            <?php echo $appointment['PayMethod']; ?>
+                                                            <?php if ($appointment['PayStatus'] === 'Pending'): ?>
+                                                                <span class="payment-status pending">(Pending)</span>
+                                                            <?php elseif ($appointment['PayStatus'] === 'Completed'): ?>
+                                                                <span class="payment-status paid">(Paid)</span>
+                                                                <?php if (!empty($appointment['TransactionID'])): ?>
+                                                                    <span class="transaction-id">#<?php echo htmlspecialchars($appointment['TransactionID']); ?></span>
+                                                                <?php endif; ?>
+                                                            <?php endif; ?>
+                                                        </span>
+                                                    </div>
                                                     <span class="price">BDT <?php echo $appointment['Amount']; ?></span>
                                                 </div>
                                             </div>
                                             
                                             <div class="appointment-actions">
                                                 <?php if ($appointment['Status'] !== 'Cancelled'): ?>
-                                                    <a href="cancel-appointment.php?id=<?php echo $appointment['AppointmentID']; ?>" class="btn btn-outline btn-sm text-error cancel-btn">Cancel</a>
+                                                    <a href="javascript:void(0)" onclick="confirmCancel(<?php echo $appointment['AppointmentID']; ?>, '<?php echo htmlspecialchars($appointment['ServiceName']); ?>', '<?php echo date('g:i A', strtotime($appointment['StartTime'])); ?>')" class="btn btn-outline btn-sm text-error cancel-btn">Cancel</a>
                                                 <?php endif; ?>
                                             </div>
                                         </div>
@@ -257,16 +355,30 @@ include '../includes/header.php';
                                                 </p>
                                                 
                                                 <div class="appointment-status">
-                                                    <span class="status-badge status-<?php echo strtolower($appointment['Status']); ?>">
-                                                        <?php echo ucfirst($appointment['Status']); ?>
-                                                    </span>
+                                                    <div class="status-info">
+                                                        <span class="status-badge status-<?php echo strtolower($appointment['Status']); ?>">
+                                                            <?php echo ucfirst($appointment['Status']); ?>
+                                                        </span>
+                                                        <span class="payment-info">
+                                                            <i class="fas fa-credit-card"></i>
+                                                            <?php echo $appointment['PayMethod']; ?>
+                                                            <?php if ($appointment['PayStatus'] === 'Pending'): ?>
+                                                                <span class="payment-status pending">(Pending)</span>
+                                                            <?php elseif ($appointment['PayStatus'] === 'Completed'): ?>
+                                                                <span class="payment-status paid">(Paid)</span>
+                                                                <?php if (!empty($appointment['TransactionID'])): ?>
+                                                                    <span class="transaction-id">#<?php echo htmlspecialchars($appointment['TransactionID']); ?></span>
+                                                                <?php endif; ?>
+                                                            <?php endif; ?>
+                                                        </span>
+                                                    </div>
                                                     <span class="price">BDT <?php echo $appointment['Amount']; ?></span>
                                                 </div>
                                             </div>
                                             
                                             <div class="appointment-actions">
                                                 <?php if ($appointment['Status'] !== 'Cancelled'): ?>
-                                                    <a href="cancel-appointment.php?id=<?php echo $appointment['AppointmentID']; ?>" class="btn btn-outline btn-sm text-error cancel-btn">Cancel</a>
+                                                    <a href="javascript:void(0)" onclick="confirmCancel(<?php echo $appointment['AppointmentID']; ?>, '<?php echo htmlspecialchars($appointment['ServiceName']); ?>', '<?php echo date('g:i A', strtotime($appointment['StartTime'])); ?>')" class="btn btn-outline btn-sm text-error cancel-btn">Cancel</a>
                                                 <?php endif; ?>
                                                 
                                                 <?php if (empty($appointment['ReviewID']) && $appointment['Status'] === 'Completed'): ?>
@@ -294,44 +406,6 @@ include '../includes/header.php';
                                     <h3>No Past Appointments</h3>
                                     <p>You haven't had any appointments yet.</p>
                                     <a href="../booking.php" class="btn btn-primary">Book Your First Appointment</a>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    
-                    <div class="section-card">
-                        <div class="card-header">
-                            <h2>Recent Notifications</h2>
-                            <a href="notifications.php" class="view-all">View All</a>
-                        </div>
-                        
-                        <div class="card-content">
-                            <?php if ($notificationsResult->num_rows > 0): ?>
-                                <div class="notifications-list">
-                                    <?php while ($notification = $notificationsResult->fetch_assoc()): ?>
-                                        <div class="notification-item <?php echo ($notification['Status'] === 'pending') ? 'unread' : ''; ?>">
-                                            <div class="notification-icon">
-                                                <i class="fas fa-bell"></i>
-                                            </div>
-                                            <div class="notification-content">
-                                                <h4><?php echo htmlspecialchars($notification['Subject']); ?></h4>
-                                                <p class="notification-time">
-                                                    <?php echo time_elapsed_string($notification['SentAt']); ?>
-                                                </p>
-                                            </div>
-                                            <a href="notification-details.php?id=<?php echo $notification['NotificationID']; ?>" class="notification-link">
-                                                <i class="fas fa-chevron-right"></i>
-                                            </a>
-                                        </div>
-                                    <?php endwhile; ?>
-                                </div>
-                            <?php else: ?>
-                                <div class="empty-state">
-                                    <div class="empty-state-icon">
-                                        <i class="fas fa-bell-slash"></i>
-                                    </div>
-                                    <h3>No Notifications</h3>
-                                    <p>You don't have any notifications at the moment.</p>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -422,6 +496,14 @@ function time_elapsed_string($datetime, $full = false) {
 
 include '../includes/footer.php';
 ?>
+
+<script>
+function confirmCancel(appointmentId, serviceName, time) {
+    if (confirm(`Are you sure you want to cancel your ${serviceName} appointment at ${time}?`)) {
+        window.location.href = `cancel-appointment.php?id=${appointmentId}`;
+    }
+}
+</script>
 
 <style>
 /* Dashboard Styles */
@@ -580,6 +662,24 @@ include '../includes/footer.php';
     width: 100%;
 }
 
+.btn-outline {
+    background-color: transparent;
+    color: var(--color-primary);
+    transition: all 0.2s ease;
+}
+
+.cancel-btn {
+    background-color: transparent;
+    border: 2px solid red;
+    transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+    background-color: red;
+    color: white;
+    border-color: red;
+}
+
 .section-card {
     background-color: white;
     border-radius: var(--radius-md);
@@ -690,6 +790,24 @@ include '../includes/footer.php';
     line-height: 1;
 }
 
+
+.payment-status {
+    font-size: 1.2rem;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.payment-status.pending {
+    color: #f59e0b;
+    background-color: rgba(245, 158, 11, 0.1);
+}
+
+.payment-status.paid {
+    color: #10b981;
+    background-color: rgba(16, 185, 129, 0.1);
+}
+
 .time {
     font-size: 1.4rem;
 }
@@ -720,6 +838,31 @@ include '../includes/footer.php';
     justify-content: space-between;
     align-items: center;
     margin-top: 8px;
+}
+
+.status-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.payment-info {
+    font-size: 1.4rem;
+    color: var(--color-text-light);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.payment-info i {
+    font-size: 1.2rem;
+    color: var(--color-primary);
+}
+
+.payment-status.pending {
+    color: #f59e0b;
+    font-size: 1.2rem;
+    font-weight: 500;
 }
 
 .status-badge {
@@ -779,78 +922,6 @@ include '../includes/footer.php';
     text-align: center;
 }
 
-.notifications-list {
-    display: flex;
-    flex-direction: column;
-}
-
-.notification-item {
-    display: flex;
-    align-items: center;
-    padding: var(--space-2);
-    border-bottom: 1px solid var(--color-border);
-    transition: background-color 0.3s ease;
-}
-
-.notification-item:last-child {
-    border-bottom: none;
-}
-
-.notification-item:hover {
-    background-color: rgba(0, 0, 0, 0.02);
-}
-
-.notification-item.unread {
-    background-color: rgba(26, 54, 93, 0.05);
-}
-
-.notification-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: rgba(26, 54, 93, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: var(--space-2);
-}
-
-.notification-icon i {
-    color: var(--color-primary);
-}
-
-.notification-item.unread .notification-icon {
-    background-color: var(--color-primary);
-}
-
-.notification-item.unread .notification-icon i {
-    color: white;
-}
-
-.notification-content {
-    flex: 1;
-}
-
-.notification-content h4 {
-    margin-bottom: 4px;
-    font-size: 1.6rem;
-}
-
-.notification-time {
-    color: var(--color-text-light);
-    font-size: 1.4rem;
-    margin: 0;
-}
-
-.notification-link {
-    color: var(--color-text-light);
-    padding: 8px;
-}
-
-.notification-link:hover {
-    color: var(--color-primary);
-}
-
 @media (max-width: 991px) {
     .dashboard-content {
         flex-direction: column;
@@ -885,38 +956,9 @@ include '../includes/footer.php';
     }
 }
 
-@media (max-width: 768px) {
-    .appointment-card {
-        flex-direction: column;
-    }
-    
-    .appointment-date {
-        flex-direction: row;
-        justify-content: space-between;
-        width: 100%;
-        padding: var(--space-2) var(--space-3);
-    }
-    
-    .date-display {
-        flex-direction: row;
-        gap: 8px;
-        align-items: center;
-        margin-bottom: 0;
-    }
-    
-    .appointment-actions {
-        flex-direction: row;
-    }
-}
-
-@media (max-width: 576px) {
-    .dashboard-overview {
-        grid-template-columns: 1fr;
-    }
-    
-    .nav-item {
-        padding: var(--space-1) var(--space-2);
-        font-size: 1.4rem;
-    }
+.status-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
 }
 </style>

@@ -24,14 +24,14 @@ $customer = $customerResult->fetch_assoc();
 // Get all upcoming appointments
 $upcomingQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, s.Name as ServiceName, 
                    b.FirstName as BarberFirstName, b.LastName as BarberLastName, p.Amount,
-                   s.Duration, s.Price
+                   s.Duration, s.Price, p.PayMethod, p.PayStatus, p.TransactionID
                   FROM Appointments a 
                   JOIN Payments p ON a.PaymentID = p.PaymentID 
                   JOIN ApptContains ac ON a.AppointmentID = ac.AppointmentID 
                   JOIN Services s ON ac.ServiceID = s.ServiceID 
                   JOIN BarberHas bh ON a.AppointmentID = bh.AppointmentID 
                   JOIN Barbers b ON bh.BarberID = b.UserID 
-                  WHERE a.CustomerID = ? AND a.StartTime > NOW() 
+                  WHERE a.CustomerID = ? AND DATE(a.StartTime) >= CURDATE() 
                   ORDER BY 
                     CASE a.Status 
                         WHEN 'Scheduled' THEN 1 
@@ -188,6 +188,20 @@ include '../includes/header.php';
                                             <i class="fas fa-tag"></i>
                                             <span>BDT <?php echo $appointment['Amount']; ?></span>
                                         </div>
+                                        <div class="detail-item">
+                                            <i class="fas fa-credit-card"></i>
+                                            <span>
+                                                <?php echo htmlspecialchars($appointment['PayMethod']); ?>
+                                                <?php if ($appointment['PayStatus'] === 'Pending'): ?>
+                                                    <span class="payment-status pending">(Pending)</span>
+                                                <?php elseif ($appointment['PayStatus'] === 'Completed'): ?>
+                                                    <span class="payment-status paid">(Paid)</span>
+                                                    <?php if ($appointment['TransactionID']): ?>
+                                                        <span class="transaction-id">#<?php echo htmlspecialchars($appointment['TransactionID']); ?></span>
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                            </span>
+                                        </div>
                                     </div>
                                     
                                     <?php if ($appointment['Status'] === 'Scheduled'): ?>
@@ -244,6 +258,20 @@ include '../includes/header.php';
                                         <div class="detail-item">
                                             <i class="fas fa-tag"></i>
                                             <span>BDT <?php echo $appointment['Amount']; ?></span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <i class="fas fa-credit-card"></i>
+                                            <span>
+                                                <?php echo htmlspecialchars($appointment['PayMethod']); ?>
+                                                <?php if ($appointment['PayStatus'] === 'Pending'): ?>
+                                                    <span class="payment-status pending">(Pending)</span>
+                                                <?php elseif ($appointment['PayStatus'] === 'Completed'): ?>
+                                                    <span class="payment-status paid">(Paid)</span>
+                                                    <?php if ($appointment['TransactionID']): ?>
+                                                        <span class="transaction-id">#<?php echo htmlspecialchars($appointment['TransactionID']); ?></span>
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                            </span>
                                         </div>
                                     </div>
                                     

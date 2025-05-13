@@ -19,8 +19,14 @@ $barberStmt->execute();
 $barber = $barberStmt->get_result()->fetch_assoc();
 
 // Fetch today's appointments
-$todayQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, s.Name as ServiceName, 
-               c.FirstName as CustomerFirstName, c.LastName as CustomerLastName, p.Amount 
+$todayQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, 
+               GROUP_CONCAT(s.Name SEPARATOR ', ') as ServiceNames,
+               GROUP_CONCAT(s.ServiceID) as ServiceIDs,
+               GROUP_CONCAT(DISTINCT p.PayMethod) as PayMethods,
+               GROUP_CONCAT(DISTINCT p.PayStatus) as PayStatuses,
+               GROUP_CONCAT(DISTINCT p.TransactionID) as TransactionIDs,
+               SUM(p.Amount) as TotalAmount,
+               c.FirstName as CustomerFirstName, c.LastName as CustomerLastName
               FROM Appointments a 
               JOIN Payments p ON a.PaymentID = p.PaymentID 
               JOIN Customers c ON a.CustomerID = c.UserID 
@@ -28,6 +34,7 @@ $todayQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, s.Name 
               JOIN Services s ON ac.ServiceID = s.ServiceID 
               JOIN BarberHas bh ON a.AppointmentID = bh.AppointmentID 
               WHERE bh.BarberID = ? AND DATE(a.StartTime) = CURDATE() AND a.Status != 'Cancelled' 
+              GROUP BY a.AppointmentID
               ORDER BY a.StartTime ASC";
 
 $todayStmt = $conn->prepare($todayQuery);
@@ -36,17 +43,22 @@ $todayStmt->execute();
 $todayResult = $todayStmt->get_result();
 
 // Fetch future appointments
-$futureQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, s.Name as ServiceName, 
-               c.FirstName as CustomerFirstName, c.LastName as CustomerLastName, p.Amount
-               FROM Appointments a, Services s, Customers c, Payments p, BarberHas bh, ApptContains ac
-               WHERE bh.AppointmentID = a.AppointmentID
-               AND a.CustomerID = c.UserID
-               AND a.PaymentID = p.PaymentID
-               AND a.AppointmentID = ac.AppointmentID
-               AND ac.ServiceID = s.ServiceID
-               AND bh.BarberID = ?
-               AND a.Status != 'cancelled'
-               AND a.StartTime > CURDATE()
+$futureQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, 
+               GROUP_CONCAT(s.Name SEPARATOR ', ') as ServiceNames,
+               GROUP_CONCAT(s.ServiceID) as ServiceIDs,
+               GROUP_CONCAT(DISTINCT p.PayMethod) as PayMethods,
+               GROUP_CONCAT(DISTINCT p.PayStatus) as PayStatuses,
+               GROUP_CONCAT(DISTINCT p.TransactionID) as TransactionIDs,
+               SUM(p.Amount) as TotalAmount,
+               c.FirstName as CustomerFirstName, c.LastName as CustomerLastName
+               FROM Appointments a 
+               JOIN Payments p ON a.PaymentID = p.PaymentID 
+               JOIN Customers c ON a.CustomerID = c.UserID 
+               JOIN ApptContains ac ON a.AppointmentID = ac.AppointmentID 
+               JOIN Services s ON ac.ServiceID = s.ServiceID 
+               JOIN BarberHas bh ON a.AppointmentID = bh.AppointmentID 
+               WHERE bh.BarberID = ? AND DATE(a.StartTime) > CURDATE() AND a.Status != 'cancelled' 
+               GROUP BY a.AppointmentID
                ORDER BY a.StartTime ASC";
 
 $futureStmt = $conn->prepare($futureQuery);
@@ -90,8 +102,8 @@ include '../includes/header.php';
     <section class="dashboard-section">
         <div class="container">
             <div class="dashboard-header">
-                <h1 style="font-size: 2.4rem;">Barber Dashboard</h1>
-                <p>Welcome back, <?php echo htmlspecialchars($barber['FirstName'] . ' ' . $barber['LastName']); ?>!</p>
+                <h1>Barber Dashboard</h1>
+                <p class="welcome-name">Welcome back, <?php echo htmlspecialchars($barber['FirstName'] . ' ' . $barber['LastName']); ?>!</p>
             </div>
             
             <div class="dashboard-overview">
@@ -136,6 +148,10 @@ include '../includes/header.php';
                             <i class="fas fa-tachometer-alt"></i>
                             <span>Dashboard</span>
                         </a>
+                        <a href="appointments.php" class="nav-item">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>My Appointments</span>
+                        </a>
                         <a href="reviews.php" class="nav-item">
                             <i class="fas fa-star"></i>
                             <span>Reviews</span>
@@ -144,85 +160,6 @@ include '../includes/header.php';
                             <i class="fas fa-user"></i>
                             <span>My Profile</span>
                         </a>
-                    </div>
-                    
-                    <div class="day-summary">
-                        <h3>Today's Summary</h3>
-                        
-                        <?php if ($todayResult->num_rows > 0): ?>
-                            <div class="time-slots">
-                                <?php
-                                // Working hours: 9 AM to 6 PM
-                                $workingHours = [];
-                                for ($i = 9; $i <= 18; $i++) {
-                                    $workingHours[] = sprintf('%02d:00', $i);
-                                    if ($i < 18) { // Don't add 18:30 as it's past closing
-                                        $workingHours[] = sprintf('%02d:30', $i);
-                                    }
-                                }
-                                
-                                // Reset pointer to beginning of result set
-                                $todayResult->data_seek(0);
-                                
-                                $appointments = [];
-                                while ($appt = $todayResult->fetch_assoc()) {
-                                    $startTime = date('H:i', strtotime($appt['StartTime']));
-                                    $endTime = date('H:i', strtotime($appt['EndTime']));
-                                    $appointments[$startTime] = [
-                                        'id' => $appt['AppointmentID'],
-                                        'customer' => $appt['CustomerFirstName'] . ' ' . $appt['CustomerLastName'],
-                                        'service' => $appt['ServiceName'],
-                                        'endTime' => $endTime,
-                                        'status' => $appt['Status']
-                                    ];
-                                }
-                                
-                                $currentTime = date('H:i');
-                                
-                                foreach ($workingHours as $time):
-                                    $timeClass = 'time-slot';
-                                    $slotContent = '';
-                                    
-                                    // Is this time in the past?
-                                    if ($time < $currentTime) {
-                                        $timeClass .= ' past';
-                                    }
-                                    
-                                    // Is there an appointment at this time?
-                                    if (isset($appointments[$time])) {
-                                        $appt = $appointments[$time];
-                                        $timeClass .= ' booked';
-                                        if ($appt['status'] === 'completed') {
-                                            $timeClass .= ' completed';
-                                        }
-                                        
-
-                                        $slotContent .= '<span class="slot-customer">' . htmlspecialchars($appt['customer']) . '</span>';
-                                        $slotContent .= '<span class="slot-service">' . htmlspecialchars($appt['service']) . '</span>';
-                                        $slotContent .= '</a>';
-                                    }
-                                    
-                                    // Is this time part of an ongoing appointment?
-                                    foreach ($appointments as $startTime => $appt) {
-                                        if ($time > $startTime && $time < $appt['endTime'] && !isset($appointments[$time])) {
-                                            $timeClass .= ' ongoing';
-                                            break;
-                                        }
-                                    }
-                                ?>
-                                    <div class="<?php echo $timeClass; ?>">
-                                        <span class="slot-time"><?php echo date('g:i A', strtotime("2000-01-01 $time")); ?></span>
-                                        <?php echo $slotContent; ?>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                            
-                        <?php else: ?>
-                            <div class="empty-schedule">
-                                <p>You have no appointments scheduled for today.</p>
-                                <p class="day-off">Enjoy your day off!</p>
-                            </div>
-                        <?php endif; ?>
                     </div>
                 </div>
                 
@@ -243,28 +180,74 @@ include '../includes/header.php';
                                 <div class="appointments-list">
                                     <?php while ($appointment = $todayResult->fetch_assoc()): ?>
                                         <div class="appointment-card">
-                                            
+                                            <div class="appointment-time">
+                                                <div class="date-display">
+                                                    <span class="month"><?php echo date('M', strtotime($appointment['StartTime'])); ?></span>
+                                                    <span class="day"><?php echo date('d', strtotime($appointment['StartTime'])); ?></span>
+                                                </div>
+                                                <span class="time"><?php echo date('g:i A', strtotime($appointment['StartTime'])); ?></span>
+                                                <span class="duration">
+                                                    <?php
+                                                    $start = new DateTime($appointment['StartTime']);
+                                                    $end = new DateTime($appointment['EndTime']);
+                                                    $duration = $start->diff($end);
+                                                    echo $duration->format('%h hr %i min');
+                                                    ?>
+                                                </span>
+                                            </div>
                                             
                                             <div class="appointment-details">
-                                                <h3><?php echo htmlspecialchars($appointment['ServiceName']); ?></h3>
+                                                <h3><?php echo htmlspecialchars($appointment['ServiceNames']); ?></h3>
                                                 <p class="customer-name">
                                                     <i class="fas fa-user"></i>
                                                     <?php echo htmlspecialchars($appointment['CustomerFirstName'] . ' ' . $appointment['CustomerLastName']); ?>
                                                 </p>
                                                 <div class="appointment-status">
-                                                    <span class="status-badge status-<?php echo strtolower($appointment['Status']); ?>">
-                                                        <?php echo ucfirst($appointment['Status']); ?>
-                                                    </span>
-                                                    <span class="price">BDT <?php echo $appointment['Amount']; ?></span>
+                                                    <div class="status-info">
+                                                        <span class="status-badge status-<?php echo strtolower($appointment['Status']); ?>">
+                                                            <?php echo ucfirst($appointment['Status']); ?>
+                                                        </span>
+                                                        <span class="payment-info">
+                                                            <i class="fas fa-credit-card"></i>
+                                                            <?php 
+                                                            $payMethods = explode(',', $appointment['PayMethods']);
+                                                            $payStatuses = explode(',', $appointment['PayStatuses']);
+                                                            $transactionIDs = explode(',', $appointment['TransactionIDs']);
+                                                            
+                                                            // Display payment methods
+                                                            echo implode(', ', array_unique($payMethods));
+                                                            
+                                                            // Check if all payments are completed
+                                                            $allCompleted = !in_array('Pending', $payStatuses);
+                                                            $allPending = !in_array('Completed', $payStatuses);
+                                                            
+                                                            if ($allPending): ?>
+                                                                <span class="payment-status pending">(Pending)</span>
+                                                            <?php elseif ($allCompleted): ?>
+                                                                <span class="payment-status paid">(Paid)</span>
+                                                                <?php 
+                                                                // Display transaction IDs if available
+                                                                $validTransactionIDs = array_filter($transactionIDs);
+                                                                if (!empty($validTransactionIDs)): ?>
+                                                                    <span class="transaction-id">#<?php echo htmlspecialchars(implode(', #', $validTransactionIDs)); ?></span>
+                                                                <?php endif; ?>
+                                                            <?php else: ?>
+                                                                <span class="payment-status partial">(Partial)</span>
+                                                            <?php endif; ?>
+                                                        </span>
+                                                    </div>
+                                                    <span class="price">BDT <?php echo $appointment['TotalAmount']; ?></span>
                                                 </div>
                                             </div>
                                             
                                             <div class="appointment-actions">
-                                                <form method="POST" action="cancel-appointment.php" 
-                                                      onsubmit="return handleCancelAppointment(this);">
-                                                    <input type="hidden" name="appointment_id" value="<?php echo $appointment['AppointmentID']; ?>">
-                                                    <button type="submit" name="cancel_appointment" class="btn btn-danger btn-sm">Cancel</button>
-                                                </form>
+                                                <?php if ($appointment['Status'] != 'Completed'): ?>
+                                                    <form method="POST" action="cancel-appointment.php" 
+                                                        onsubmit="return handleCancelAppointment(this);">
+                                                        <input type="hidden" name="appointment_id" value="<?php echo $appointment['AppointmentID']; ?>">
+                                                        <button type="submit" name="cancel_appointment" class="btn btn-outline btn-sm text-error btn-danger cancel-btn">Cancel</button>
+                                                    </form>
+                                                <?php endif; ?>
                                                 <?php if ($appointment['Status'] === 'Scheduled'): ?>
                                                     <a href="mark-completed.php?id=<?php echo $appointment['AppointmentID']; ?>" class="btn btn-primary btn-sm">Complete</a>
                                                 <?php endif; ?>
@@ -318,16 +301,46 @@ include '../includes/header.php';
                                             </div>
                                             
                                             <div class="appointment-details">
-                                                <h3><?php echo htmlspecialchars($appointment['ServiceName']); ?></h3>
+                                                <h3><?php echo htmlspecialchars($appointment['ServiceNames']); ?></h3>
                                                 <p class="customer-name">
                                                     <i class="fas fa-user"></i>
                                                     <?php echo htmlspecialchars($appointment['CustomerFirstName'] . ' ' . $appointment['CustomerLastName']); ?>
                                                 </p>
                                                 <div class="appointment-status">
-                                                    <span class="status-badge status-<?php echo strtolower($appointment['Status']); ?>">
-                                                        <?php echo ucfirst($appointment['Status']); ?>
-                                                    </span>
-                                                    <span class="price">BDT <?php echo $appointment['Amount']; ?></span>
+                                                    <div class="status-info">
+                                                        <span class="status-badge status-<?php echo strtolower($appointment['Status']); ?>">
+                                                            <?php echo ucfirst($appointment['Status']); ?>
+                                                        </span>
+                                                        <span class="payment-info">
+                                                            <i class="fas fa-credit-card"></i>
+                                                            <?php 
+                                                            $payMethods = explode(',', $appointment['PayMethods']);
+                                                            $payStatuses = explode(',', $appointment['PayStatuses']);
+                                                            $transactionIDs = explode(',', $appointment['TransactionIDs']);
+                                                            
+                                                            // Display payment methods
+                                                            echo implode(', ', array_unique($payMethods));
+                                                            
+                                                            // Check if all payments are completed
+                                                            $allCompleted = !in_array('Pending', $payStatuses);
+                                                            $allPending = !in_array('Completed', $payStatuses);
+                                                            
+                                                            if ($allPending): ?>
+                                                                <span class="payment-status pending">(Pending)</span>
+                                                            <?php elseif ($allCompleted): ?>
+                                                                <span class="payment-status paid">(Paid)</span>
+                                                                <?php 
+                                                                // Display transaction IDs if available
+                                                                $validTransactionIDs = array_filter($transactionIDs);
+                                                                if (!empty($validTransactionIDs)): ?>
+                                                                    <span class="transaction-id">#<?php echo htmlspecialchars(implode(', #', $validTransactionIDs)); ?></span>
+                                                                <?php endif; ?>
+                                                            <?php else: ?>
+                                                                <span class="payment-status partial">(Partial)</span>
+                                                            <?php endif; ?>
+                                                        </span>
+                                                    </div>
+                                                    <span class="price">BDT <?php echo $appointment['TotalAmount']; ?></span>
                                                 </div>
                                             </div>
                                             
@@ -350,7 +363,7 @@ include '../includes/header.php';
                                         <i class="fas fa-calendar-day"></i>
                                     </div>
                                     <h3>No Appointments Today</h3>
-                                    <p>You don't have any appointments scheduled for today.</p>
+                                    <p>You don't have any upcoming appointments.</p>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -476,75 +489,64 @@ function showMessage(message, type) {
 <style>
 /* Dashboard Styles */
 .dashboard-section {
-    padding: 2rem 0;
+    padding: var(--space-4) 0;
     margin-top: 80px;
-    min-height: calc(100vh - 80px);
-    background-color: #f5f7fa;
 }
 
 .dashboard-header {
-    margin-bottom: 2rem;
-    padding: 0 1rem;
+    margin-bottom: var(--space-4);
 }
 
 .dashboard-header h1 {
-    margin-bottom: 0.5rem;
-    font-size: 2.4rem;
+    margin-bottom: var(--space-1);
 }
 
 .dashboard-header p {
-    color: #666;
-    font-size: 1.6rem;
+    color: var(--color-text-light);
+    font-size: 1.8rem;
 }
 
 .dashboard-overview {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-    padding: 0 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
 }
 
 .overview-card {
     background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-3);
     display: flex;
     align-items: center;
-    transition: transform 0.2s ease;
-}
-
-.overview-card:hover {
-    transform: translateY(-2px);
 }
 
 .overview-icon {
-    width: 50px;
-    height: 50px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background-color: rgba(26, 54, 93, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 1.5rem;
+    margin-right: var(--space-3);
 }
 
 .overview-icon i {
-    font-size: 2rem;
-    color: #1a365d;
+    font-size: 2.4rem;
+    color: var(--color-primary);
 }
 
 .overview-content h3 {
     margin-bottom: 4px;
-    font-size: 1.6rem;
-    color: #333;
+    font-size: 1.8rem;
 }
 
 .overview-count {
-    font-size: 2rem;
+    font-size: 2.4rem;
     font-weight: 600;
-    color: #1a365d;
+    color: var(--color-primary);
     margin: 0;
 }
 
@@ -555,149 +557,69 @@ function showMessage(message, type) {
 }
 
 .dashboard-content {
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 2rem;
-    padding: 0 1rem;
-    max-width: 1400px;
-    margin: 0 auto;
+    display: flex;
+    gap: var(--space-4);
 }
 
 .dashboard-sidebar {
-    position: sticky;
-    top: 80px;
-    height: fit-content;
+    width: 300px;
+    flex-shrink: 0;
+}
+
+.dashboard-main {
+    flex: 1;
 }
 
 .dashboard-nav {
     background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
     overflow: hidden;
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--space-3);
 }
 
 .nav-item {
     display: flex;
     align-items: center;
-    padding: 1rem 1.5rem;
-    color: #333;
+    padding: var(--space-2) var(--space-3);
+    color: var(--color-text);
     border-left: 3px solid transparent;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    font-size: 1.4rem;
+    transition: all 0.3s ease;
+    position: relative;
 }
 
 .nav-item i {
-    margin-right: 1rem;
+    margin-right: var(--space-2);
     width: 20px;
     text-align: center;
-    color: #666;
-    transition: color 0.2s ease;
+    color: var(--color-text-light);
+    transition: color 0.3s ease;
 }
 
 .nav-item:hover {
     background-color: rgba(0, 0, 0, 0.03);
-    color: #1a365d;
+    color: var(--color-primary);
 }
 
 .nav-item:hover i {
-    color: #1a365d;
+    color: var(--color-primary);
 }
 
 .nav-item.active {
-    border-left-color: #1a365d;
+    border-left-color: var(--color-primary);
     background-color: rgba(26, 54, 93, 0.05);
-    color: #1a365d;
+    color: var(--color-primary);
 }
 
 .nav-item.active i {
-    color: #1a365d;
-}
-
-.day-summary {
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    padding: 1.5rem;
-}
-
-.day-summary h3 {
-    margin-bottom: 1rem;
-    font-size: 1.8rem;
-}
-
-.time-slots {
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.time-slot {
-    display: flex;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #e2e8f0;
-    transition: background-color 0.2s ease;
-}
-
-.time-slot:last-child {
-    border-bottom: none;
-}
-
-.time-slot.past {
-    opacity: 0.6;
-}
-
-.time-slot.booked {
-    background-color: rgba(26, 54, 93, 0.05);
-}
-
-.time-slot.ongoing {
-    background-color: rgba(26, 54, 93, 0.05);
-}
-
-.time-slot.completed {
-    background-color: rgba(67, 160, 71, 0.05);
-}
-
-.slot-time {
-    min-width: 80px;
-    font-weight: 500;
-}
-
-.slot-details {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    text-decoration: none;
-    color: inherit;
-}
-
-.slot-customer {
-    font-weight: 500;
-}
-
-.slot-service {
-    font-size: 1.4rem;
-    color: #666;
-}
-
-.empty-schedule {
-    text-align: center;
-    padding: 2rem 0;
-}
-
-.day-off {
-    color: #1a365d;
-    font-weight: 500;
-    font-size: 1.6rem;
+    color: var(--color-primary);
 }
 
 .section-card {
     background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 2rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--space-4);
     overflow: hidden;
 }
 
@@ -705,73 +627,71 @@ function showMessage(message, type) {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem;
-    border-bottom: 1px solid #e2e8f0;
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .card-header h2 {
     margin: 0;
-    font-size: 1.8rem;
+    font-size: 2rem;
 }
 
 .view-all {
-    color: #1a365d;
+    color: var(--color-primary);
     font-weight: 500;
-    text-decoration: none;
 }
 
 .card-content {
-    padding: 1.5rem;
+    padding: var(--space-3);
 }
 
 .empty-state {
     text-align: center;
-    padding: 3rem 0;
+    padding: var(--space-4) 0;
 }
 
 .empty-state-icon {
-    width: 60px;
-    height: 60px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     background-color: rgba(26, 54, 93, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 1.5rem;
+    margin: 0 auto var(--space-3);
 }
 
 .empty-state-icon i {
-    font-size: 2.4rem;
-    color: #1a365d;
+    font-size: 3rem;
+    color: var(--color-primary);
 }
 
 .empty-state h3 {
-    margin-bottom: 0.5rem;
-    font-size: 1.8rem;
+    margin-bottom: var(--space-1);
 }
 
 .empty-state p {
-    color: #666;
-    margin-bottom: 1.5rem;
+    color: var(--color-text-light);
+    margin-bottom: var(--space-3);
 }
 
 .appointments-list {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-3);
 }
 
 .appointment-card {
     display: flex;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .appointment-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-md);
 }
 
 .appointment-time {
@@ -779,10 +699,10 @@ function showMessage(message, type) {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: #1a365d;
+    background-color: var(--color-primary);
     color: white;
-    padding: 1rem;
-    min-width: 120px;
+    padding: var(--space-2);
+    min-width: 100px;
     text-align: center;
 }
 
@@ -800,38 +720,31 @@ function showMessage(message, type) {
 }
 
 .day {
-    font-size: 2rem;
+    font-size: 2.4rem;
     font-weight: 700;
     line-height: 1;
 }
 
-.appointment-time .time {
-    font-size: 1.6rem;
-    font-weight: 600;
-    margin: 4px 0;
-}
-
-.appointment-time .duration {
-    font-size: 1.2rem;
-    opacity: 0.8;
+.time {
+    font-size: 1.4rem;
 }
 
 .appointment-details {
     flex: 1;
-    padding: 1rem;
+    padding: var(--space-2);
 }
 
 .appointment-details h3 {
     margin-bottom: 4px;
-    font-size: 1.6rem;
+    font-size: 1.8rem;
 }
 
-.customer-name {
+.appointment-details p {
     margin-bottom: 4px;
-    color: #666;
+    color: var(--color-text-light);
 }
 
-.customer-name i {
+.appointment-details i {
     width: 20px;
     text-align: center;
     margin-right: 4px;
@@ -844,32 +757,74 @@ function showMessage(message, type) {
     margin-top: 8px;
 }
 
+.status-info {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+.payment-info {
+    font-size: 1.4rem;
+    color: var(--color-text-light);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.payment-info i {
+    font-size: 1.2rem;
+    color: var(--color-primary);
+}
+
+.payment-status {
+    font-size: 1.2rem;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.payment-status.pending {
+    color: #f59e0b;
+    background-color: rgba(245, 158, 11, 0.1);
+}
+
+.payment-status.paid {
+    color: #10b981;
+    background-color: rgba(16, 185, 129, 0.1);
+}
+
+.payment-status.partial {
+    color: #f59e0b;
+    background-color: rgba(245, 158, 11, 0.1);
+}
+
 .status-badge {
     display: inline-block;
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     font-size: 1.2rem;
     font-weight: 500;
 }
 
 .status-scheduled {
     background-color: rgba(92, 158, 173, 0.1);
-    color: #5c9ead;
+    color: var(--color-accent);
 }
 
 .status-completed {
     background-color: rgba(67, 160, 71, 0.1);
-    color: #43a047;
+    color: var(--color-success);
 }
 
 .status-cancelled {
     background-color: rgba(229, 57, 53, 0.1);
-    color: #e53935;
+    color: var(--color-error);
 }
 
 .price {
     font-weight: 600;
-    color: #1a365d;
+    color: var(--color-primary);
 }
 
 .appointment-actions {
@@ -877,8 +832,8 @@ function showMessage(message, type) {
     flex-direction: column;
     justify-content: center;
     gap: 8px;
-    padding: 1rem;
-    background-color: #f8fafc;
+    padding: var(--space-2);
+    background-color: var(--color-bg-alt);
 }
 
 .btn-sm {
@@ -886,23 +841,44 @@ function showMessage(message, type) {
     padding: 6px 12px;
 }
 
+.btn-danger {
+    background-color: transparent;
+    color: var(--color-error);
+    border: 2px solid var(--color-error);
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.btn-danger:hover {
+    background-color: var(--color-error);
+    color: white;
+    border-color: var(--color-error);
+}
+
+.transaction-id {
+    font-size: 1.2rem;
+    color: var(--color-text-light);
+    margin-left: 5px;
+    font-family: monospace;
+}
+
 .reviews-list {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-3);
 }
 
 .review-card {
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 1.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
 }
 
 .review-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-2);
 }
 
 .customer-info {
@@ -914,13 +890,13 @@ function showMessage(message, type) {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background-color: #1a365d;
+    background-color: var(--color-primary);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 600;
-    margin-right: 1rem;
+    margin-right: var(--space-2);
 }
 
 .customer-name h4 {
@@ -929,36 +905,28 @@ function showMessage(message, type) {
 }
 
 .review-rating {
-    color: #f59e0b;
+    color: var(--color-secondary);
 }
 
 .review-body p {
     margin: 0;
-    color: #333;
+    color: var(--color-text);
     line-height: 1.5;
-}
-
-@media (max-width: 1200px) {
-    .dashboard-content {
-        grid-template-columns: 250px 1fr;
-    }
 }
 
 @media (max-width: 991px) {
     .dashboard-content {
-        grid-template-columns: 1fr;
+        flex-direction: column;
     }
     
     .dashboard-sidebar {
-        position: static;
         width: 100%;
+        margin-bottom: var(--space-3);
     }
     
     .dashboard-nav {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.5rem;
-        padding: 0.5rem;
     }
     
     .nav-item {
@@ -967,29 +935,20 @@ function showMessage(message, type) {
         justify-content: center;
         text-align: center;
         border-left: none;
-        border-bottom: 2px solid transparent;
-        padding: 0.8rem 1rem;
+        border-bottom: 3px solid transparent;
     }
     
     .nav-item.active {
         border-left-color: transparent;
-        border-bottom-color: #1a365d;
+        border-bottom-color: var(--color-primary);
     }
     
     .nav-item i {
-        margin-right: 0.5rem;
-    }
-    
-    .day-summary {
-        margin-top: 1.5rem;
+        margin-right: 8px;
     }
 }
 
 @media (max-width: 768px) {
-    .dashboard-overview {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
     .appointment-card {
         flex-direction: column;
     }
@@ -998,13 +957,29 @@ function showMessage(message, type) {
         flex-direction: row;
         justify-content: space-between;
         width: 100%;
-        padding: 1rem 1.5rem;
+        padding: var(--space-2) var(--space-3);
+    }
+    
+    .date-display {
+        flex-direction: row;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 0;
     }
     
     .appointment-actions {
         flex-direction: row;
         justify-content: flex-end;
         gap: 0.5rem;
+    }
+    
+    .status-info {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .payment-info {
+        margin-left: 0;
     }
 }
 
@@ -1024,11 +999,11 @@ function showMessage(message, type) {
         text-align: left;
         border-left: 3px solid transparent;
         border-bottom: none;
-        padding: 1rem 1.5rem;
+        padding: var(--space-2) var(--space-3);
     }
     
     .nav-item.active {
-        border-left-color: #1a365d;
+        border-left-color: var(--color-primary);
         border-bottom-color: transparent;
     }
     
@@ -1074,6 +1049,4 @@ function showMessage(message, type) {
     border: 0;
     cursor: pointer;
 }
-
-
 </style>

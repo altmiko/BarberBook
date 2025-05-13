@@ -431,7 +431,7 @@ include 'includes/header.php'; // Assumes you have a header file
         <h2>Select Date & Time Slot</h2>
         <div class="grid-controls">
             <label for="booking-date">Select Date:</label>
-            <input type="date" id="booking-date" name="booking-date" value="<?php echo date('Y-m-d', strtotime('+1 day')); ?>" min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>">
+            <input type="date" id="booking-date" name="booking-date" value="<?php echo date('Y-m-d'); ?>" min="<?php echo date('Y-m-d'); ?>">
         </div>
 
         <table class="booking-grid">
