@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 13, 2025 at 04:56 PM
+-- Generation Time: May 13, 2025 at 06:57 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -210,7 +210,24 @@ INSERT INTO `appointments` (`AppointmentID`, `StartTime`, `EndTime`, `Status`, `
 (191, '2025-05-12 18:00:00', '2025-05-12 19:00:00', 'Cancelled', 208, 123, 12),
 (192, '2025-05-12 17:00:00', '2025-05-12 18:00:00', 'Cancelled', 209, 123, 12),
 (193, '2025-05-13 14:00:00', '2025-05-13 15:00:00', 'Completed', 210, 123, 12),
-(194, '2025-05-14 15:00:00', '2025-05-14 16:00:00', 'Scheduled', 211, 123, 12);
+(194, '2025-05-14 15:00:00', '2025-05-14 16:00:00', 'Cancelled', 211, 123, 12),
+(195, '2025-05-13 18:00:00', '2025-05-13 19:00:00', 'Cancelled', 212, 123, 12),
+(196, '2025-05-13 17:00:00', '2025-05-13 18:00:00', 'Cancelled', 213, 123, 12),
+(197, '2025-05-13 16:00:00', '2025-05-13 17:00:00', 'Cancelled', 214, 123, 12),
+(198, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Cancelled', 215, 123, 12),
+(199, '2025-05-13 17:00:00', '2025-05-13 18:00:00', 'Cancelled', 216, 123, 12),
+(200, '2025-05-13 18:00:00', '2025-05-13 19:00:00', 'Completed', 217, 123, 12),
+(201, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Completed', 218, 123, 12),
+(202, '2025-05-13 18:00:00', '2025-05-13 19:00:00', 'Completed', 219, 123, 12),
+(203, '2025-05-13 19:00:00', '2025-05-13 20:00:00', 'Cancelled', 220, 123, 12),
+(204, '2025-05-13 19:00:00', '2025-05-13 20:00:00', 'Cancelled', 221, 123, 12),
+(205, '2025-05-13 18:00:00', '2025-05-13 19:00:00', 'Cancelled', 222, 123, 12),
+(206, '2025-05-13 18:00:00', '2025-05-13 19:00:00', 'Cancelled', 223, 123, 12),
+(207, '2025-05-13 19:00:00', '2025-05-13 20:00:00', 'Cancelled', 224, 123, 12),
+(213, '2025-05-13 18:00:00', '2025-05-13 19:00:00', 'Cancelled', 230, 123, 12),
+(214, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Cancelled', 231, 123, 12),
+(215, '2025-05-13 18:00:00', '2025-05-13 19:00:00', 'Scheduled', 232, 123, 12),
+(216, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Scheduled', 233, 123, 12);
 
 -- --------------------------------------------------------
 
@@ -406,7 +423,24 @@ INSERT INTO `apptcontains` (`ServiceID`, `AppointmentID`) VALUES
 (1, 191),
 (1, 192),
 (1, 193),
-(6, 194);
+(6, 194),
+(1, 195),
+(1, 196),
+(1, 197),
+(6, 198),
+(1, 199),
+(1, 200),
+(10, 201),
+(1, 202),
+(1, 203),
+(8, 204),
+(3, 205),
+(1, 206),
+(1, 207),
+(1, 213),
+(1, 214),
+(1, 215),
+(1, 216);
 
 -- --------------------------------------------------------
 
@@ -416,183 +450,201 @@ INSERT INTO `apptcontains` (`ServiceID`, `AppointmentID`) VALUES
 
 CREATE TABLE `barberhas` (
   `BarberID` int(11) NOT NULL,
-  `AppointmentID` int(11) NOT NULL
+  `AppointmentID` int(11) NOT NULL,
+  `bhid` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `barberhas`
 --
 
-INSERT INTO `barberhas` (`BarberID`, `AppointmentID`) VALUES
-(1, 1),
-(2, 2),
-(3, 3),
-(4, 4),
-(5, 5),
-(6, 6),
-(7, 7),
-(8, 8),
-(9, 9),
-(10, 10),
-(1, 11),
-(2, 12),
-(3, 13),
-(4, 14),
-(5, 15),
-(6, 16),
-(7, 17),
-(8, 18),
-(9, 19),
-(10, 20),
-(5, 21),
-(11, 22),
-(1, 23),
-(11, 24),
-(9, 25),
-(11, 26),
-(4, 27),
-(7, 28),
-(4, 29),
-(4, 30),
-(4, 31),
-(2, 32),
-(2, 33),
-(2, 34),
-(7, 35),
-(7, 36),
-(11, 37),
-(11, 38),
-(11, 39),
-(8, 40),
-(9, 41),
-(11, 42),
-(4, 43),
-(9, 44),
-(4, 45),
-(9, 46),
-(12, 47),
-(12, 48),
-(7, 49),
-(12, 50),
-(3, 51),
-(1, 52),
-(1, 53),
-(12, 54),
-(2, 55),
-(2, 56),
-(12, 57),
-(8, 58),
-(7, 59),
-(3, 60),
-(12, 61),
-(1, 62),
-(8, 63),
-(4, 64),
-(12, 65),
-(12, 66),
-(12, 67),
-(3, 68),
-(7, 69),
-(3, 70),
-(7, 71),
-(3, 72),
-(7, 73),
-(12, 74),
-(3, 75),
-(1, 77),
-(3, 78),
-(12, 81),
-(7, 82),
-(1, 83),
-(12, 84),
-(7, 86),
-(12, 87),
-(12, 88),
-(12, 89),
-(12, 90),
-(12, 91),
-(12, 92),
-(2, 114),
-(2, 115),
-(12, 116),
-(12, 117),
-(2, 118),
-(2, 119),
-(3, 120),
-(8, 121),
-(5, 122),
-(7, 123),
-(2, 124),
-(7, 125),
-(7, 126),
-(7, 127),
-(2, 128),
-(7, 129),
-(7, 130),
-(3, 131),
-(7, 132),
-(7, 133),
-(2, 134),
-(4, 135),
-(2, 136),
-(7, 137),
-(2, 138),
-(7, 139),
-(12, 140),
-(7, 141),
-(3, 142),
-(3, 143),
-(7, 144),
-(7, 145),
-(2, 146),
-(7, 147),
-(7, 148),
-(7, 149),
-(7, 150),
-(7, 151),
-(4, 152),
-(4, 153),
-(4, 154),
-(2, 155),
-(2, 156),
-(2, 157),
-(2, 158),
-(2, 159),
-(2, 160),
-(2, 161),
-(7, 162),
-(2, 163),
-(7, 164),
-(7, 165),
-(7, 166),
-(7, 167),
-(7, 168),
-(4, 169),
-(4, 170),
-(2, 171),
-(7, 172),
-(12, 173),
-(12, 174),
-(12, 175),
-(12, 176),
-(12, 177),
-(12, 178),
-(12, 179),
-(12, 180),
-(12, 181),
-(12, 182),
-(12, 183),
-(12, 184),
-(12, 185),
-(12, 186),
-(12, 187),
-(12, 188),
-(12, 189),
-(12, 190),
-(12, 191),
-(12, 192),
-(12, 193),
-(12, 194);
+INSERT INTO `barberhas` (`BarberID`, `AppointmentID`, `bhid`) VALUES
+(1, 1, 1),
+(2, 2, 2),
+(3, 3, 3),
+(4, 4, 4),
+(5, 5, 5),
+(6, 6, 6),
+(7, 7, 7),
+(8, 8, 8),
+(9, 9, 9),
+(10, 10, 10),
+(1, 11, 11),
+(2, 12, 12),
+(3, 13, 13),
+(4, 14, 14),
+(5, 15, 15),
+(6, 16, 16),
+(7, 17, 17),
+(8, 18, 18),
+(9, 19, 19),
+(10, 20, 20),
+(5, 21, 21),
+(11, 22, 22),
+(1, 23, 23),
+(11, 24, 24),
+(9, 25, 25),
+(11, 26, 26),
+(4, 27, 27),
+(7, 28, 28),
+(4, 29, 29),
+(4, 30, 30),
+(4, 31, 31),
+(2, 32, 32),
+(2, 33, 33),
+(2, 34, 34),
+(7, 35, 35),
+(7, 36, 36),
+(11, 37, 37),
+(11, 38, 38),
+(11, 39, 39),
+(8, 40, 40),
+(9, 41, 41),
+(11, 42, 42),
+(4, 43, 43),
+(9, 44, 44),
+(4, 45, 45),
+(9, 46, 46),
+(12, 47, 47),
+(12, 48, 48),
+(7, 49, 49),
+(12, 50, 50),
+(3, 51, 51),
+(1, 52, 52),
+(1, 53, 53),
+(12, 54, 54),
+(2, 55, 55),
+(2, 56, 56),
+(12, 57, 57),
+(8, 58, 58),
+(7, 59, 59),
+(3, 60, 60),
+(12, 61, 61),
+(1, 62, 62),
+(8, 63, 63),
+(4, 64, 64),
+(12, 65, 65),
+(12, 66, 66),
+(12, 67, 67),
+(3, 68, 68),
+(7, 69, 69),
+(3, 70, 70),
+(7, 71, 71),
+(3, 72, 72),
+(7, 73, 73),
+(12, 74, 74),
+(3, 75, 75),
+(1, 77, 76),
+(3, 78, 77),
+(12, 81, 78),
+(7, 82, 79),
+(1, 83, 80),
+(12, 84, 81),
+(7, 86, 82),
+(12, 87, 83),
+(12, 88, 84),
+(12, 89, 85),
+(12, 90, 86),
+(12, 91, 87),
+(12, 92, 88),
+(2, 114, 89),
+(2, 115, 90),
+(12, 116, 91),
+(12, 117, 92),
+(2, 118, 93),
+(2, 119, 94),
+(3, 120, 95),
+(8, 121, 96),
+(5, 122, 97),
+(7, 123, 98),
+(2, 124, 99),
+(7, 125, 100),
+(7, 126, 101),
+(7, 127, 102),
+(2, 128, 103),
+(7, 129, 104),
+(7, 130, 105),
+(3, 131, 106),
+(7, 132, 107),
+(7, 133, 108),
+(2, 134, 109),
+(4, 135, 110),
+(2, 136, 111),
+(7, 137, 112),
+(2, 138, 113),
+(7, 139, 114),
+(12, 140, 115),
+(7, 141, 116),
+(3, 142, 117),
+(3, 143, 118),
+(7, 144, 119),
+(7, 145, 120),
+(2, 146, 121),
+(7, 147, 122),
+(7, 148, 123),
+(7, 149, 124),
+(7, 150, 125),
+(7, 151, 126),
+(4, 152, 127),
+(4, 153, 128),
+(4, 154, 129),
+(2, 155, 130),
+(2, 156, 131),
+(2, 157, 132),
+(2, 158, 133),
+(2, 159, 134),
+(2, 160, 135),
+(2, 161, 136),
+(7, 162, 137),
+(2, 163, 138),
+(7, 164, 139),
+(7, 165, 140),
+(7, 166, 141),
+(7, 167, 142),
+(7, 168, 143),
+(4, 169, 144),
+(4, 170, 145),
+(2, 171, 146),
+(7, 172, 147),
+(12, 173, 148),
+(12, 174, 149),
+(12, 175, 150),
+(12, 176, 151),
+(12, 177, 152),
+(12, 178, 153),
+(12, 179, 154),
+(12, 180, 155),
+(12, 181, 156),
+(12, 182, 157),
+(12, 183, 158),
+(12, 184, 159),
+(12, 185, 160),
+(12, 186, 161),
+(12, 187, 162),
+(12, 188, 163),
+(12, 189, 164),
+(12, 190, 165),
+(12, 191, 166),
+(12, 192, 167),
+(12, 193, 168),
+(12, 194, 169),
+(12, 195, 170),
+(12, 196, 171),
+(12, 197, 179),
+(12, 198, 180),
+(12, 199, 181),
+(12, 200, 182),
+(12, 201, 183),
+(12, 202, 184),
+(12, 203, 185),
+(12, 204, 186),
+(12, 205, 187),
+(12, 206, 188),
+(12, 207, 189),
+(12, 213, 190),
+(12, 214, 191),
+(12, 215, 192),
+(12, 216, 193);
 
 -- --------------------------------------------------------
 
@@ -796,7 +848,26 @@ CREATE TABLE `notifications` (
 --
 
 INSERT INTO `notifications` (`NotificationID`, `RecipientEmail`, `SentAt`, `Status`, `Subject`, `Body`, `CustomerID`, `AppointmentID`) VALUES
-(150, 'user1@gmail.com', NULL, 'Pending', 'Test Subject 1', 'Testing!', 123, 194);
+(162, 'user1@gmail.com', NULL, 'Pending', 'Test Subject 1', 'Testing!', 123, 194),
+(163, '', '2025-05-13 16:33:42', 'pending', 'Appointment Cancelled', 'You have cancelled your appointment scheduled for May 13, 2025 5:00 PM', 123, 199),
+(164, 'user1@gmail.com', '2025-05-13 16:39:43', 'Read', 'Appointment Completed', 'Your appointment scheduled for May 13, 2025 at 06:00 PM has been marked as completed by Jocelyn Wilkins', 123, 200),
+(165, 'user1@gmail.com', '2025-05-13 16:39:43', 'Read', 'Appointment Completed', 'Your appointment scheduled for May 13, 2025 at 08:00 PM has been marked as completed by Jocelyn Wilkins', 123, 201),
+(166, 'user1@gmail.com', '2025-05-13 16:39:43', 'Read', 'Appointment Completed', 'Your appointment scheduled for May 13, 2025 at 06:00 PM has been marked as completed by Jocelyn Wilkins', 123, 202),
+(167, 'user1@gmail.com', '2025-05-13 16:39:43', 'Read', 'Appointment Cancelled', 'Your appointment scheduled for May 13, 2025 at 07:00 PM has been cancelled by Jocelyn Wilkins', 123, 203),
+(168, '', '2025-05-13 16:40:01', 'pending', 'Appointment Cancelled', 'You have cancelled your appointment scheduled for May 13, 2025 6:00 PM', 123, 205),
+(169, '', '2025-05-13 16:40:04', 'pending', 'Appointment Cancelled', 'You have cancelled your appointment scheduled for May 13, 2025 7:00 PM', 123, 204),
+(171, '', '2025-05-13 16:43:59', 'pending', 'Appointment Cancelled', 'You have cancelled your appointment scheduled for May 13, 2025 6:00 PM', 123, 206),
+(172, '', '2025-05-13 16:44:01', 'pending', 'Appointment Cancelled', 'You have cancelled your appointment scheduled for May 13, 2025 7:00 PM', 123, 207),
+(177, 'barber1@gmail.com', '2025-05-13 16:49:38', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 06:00 PM with Anisur Rahman', 123, 213),
+(178, 'user1@gmail.com', '2025-05-13 16:49:38', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 06:00 PM with Jocelyn Wilkins', 123, 213),
+(179, '', '2025-05-13 16:50:05', 'pending', 'Appointment Cancelled', 'You have cancelled your appointment scheduled for May 13, 2025 6:00 PM', 123, 213),
+(180, 'barber1@gmail.com', '2025-05-13 16:50:12', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 08:00 PM with Anisur Rahman', 123, 214),
+(181, 'user1@gmail.com', '2025-05-13 16:50:12', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 214),
+(182, 'user1@gmail.com', NULL, 'Unread', 'Appointment Cancelled', 'Your appointment scheduled for 2025-05-13 20:00:00 has been cancelled by Jocelyn Wilkins', 123, 214),
+(183, 'barber1@gmail.com', '2025-05-13 16:53:58', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 06:00 PM with Anisur Rahman', 123, 215),
+(184, 'user1@gmail.com', '2025-05-13 16:53:58', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 06:00 PM with Jocelyn Wilkins', 123, 215),
+(185, 'barber1@gmail.com', '2025-05-13 16:54:46', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 08:00 PM with Anisur Rahman', 123, 216),
+(186, 'user1@gmail.com', '2025-05-13 16:54:46', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 216);
 
 -- --------------------------------------------------------
 
@@ -965,7 +1036,24 @@ INSERT INTO `payments` (`PaymentID`, `Amount`, `PayMethod`, `PayStatus`, `Create
 (208, 250, 'Cash', 'Pending', '2025-05-12 16:42:39', '2025-05-12 16:42:39', ''),
 (209, 250, 'Rocket', 'Pending', '2025-05-12 16:47:38', '2025-05-12 16:47:38', '12345678900'),
 (210, 250, 'Cash', 'Completed', '2025-05-13 13:28:29', '2025-05-13 14:39:17', ''),
-(211, 650, 'Cash', 'Pending', '2025-05-13 13:28:43', '2025-05-13 13:28:43', '');
+(211, 650, 'Cash', 'Pending', '2025-05-13 13:28:43', '2025-05-13 13:28:43', ''),
+(212, 250, 'Cash', 'Completed', '2025-05-13 15:04:09', '2025-05-13 15:04:27', ''),
+(213, 250, 'Cash', 'Pending', '2025-05-13 15:41:42', '2025-05-13 15:41:42', ''),
+(214, 250, 'Cash', 'Pending', '2025-05-13 16:01:40', '2025-05-13 16:01:40', ''),
+(215, 650, 'Cash', 'Pending', '2025-05-13 16:02:31', '2025-05-13 16:02:31', ''),
+(216, 250, 'Cash', 'Pending', '2025-05-13 16:31:37', '2025-05-13 16:31:37', ''),
+(217, 250, 'Cash', 'Completed', '2025-05-13 16:33:53', '2025-05-13 16:35:03', ''),
+(218, 400, 'Cash', 'Completed', '2025-05-13 16:35:26', '2025-05-13 16:35:43', ''),
+(219, 250, 'Cash', 'Completed', '2025-05-13 16:36:39', '2025-05-13 16:36:42', ''),
+(220, 250, 'Cash', 'Pending', '2025-05-13 16:37:03', '2025-05-13 16:37:03', ''),
+(221, 180, 'Cash', 'Pending', '2025-05-13 16:38:41', '2025-05-13 16:38:41', ''),
+(222, 150, 'Cash', 'Pending', '2025-05-13 16:39:50', '2025-05-13 16:39:50', ''),
+(223, 250, 'Cash', 'Pending', '2025-05-13 16:41:02', '2025-05-13 16:41:02', ''),
+(224, 250, 'Cash', 'Pending', '2025-05-13 16:42:14', '2025-05-13 16:42:14', ''),
+(230, 250, 'Cash', 'Pending', '2025-05-13 16:49:38', '2025-05-13 16:49:38', ''),
+(231, 250, 'Cash', 'Pending', '2025-05-13 16:50:12', '2025-05-13 16:50:12', ''),
+(232, 250, 'Cash', 'Pending', '2025-05-13 16:53:58', '2025-05-13 16:53:58', ''),
+(233, 250, 'Cash', 'Pending', '2025-05-13 16:54:46', '2025-05-13 16:54:46', '');
 
 -- --------------------------------------------------------
 
@@ -1274,7 +1362,24 @@ INSERT INTO `slots` (`SlotID`, `Status`, `Time`, `BarberID`, `AppointmentID`) VA
 (191, 'Booked', '2025-05-12 18:00:00', 12, 191),
 (192, 'Available', '2025-05-12 17:00:00', 12, 192),
 (193, 'Booked', '2025-05-13 14:00:00', 12, 193),
-(194, 'Booked', '2025-05-14 15:00:00', 12, 194);
+(194, 'Booked', '2025-05-14 15:00:00', 12, 194),
+(195, 'Booked', '2025-05-13 18:00:00', 12, 195),
+(196, 'Booked', '2025-05-13 17:00:00', 12, 196),
+(197, 'Booked', '2025-05-13 16:00:00', 12, 197),
+(198, 'Booked', '2025-05-13 20:00:00', 12, 198),
+(199, 'Booked', '2025-05-13 17:00:00', 12, 199),
+(200, 'Booked', '2025-05-13 18:00:00', 12, 200),
+(201, 'Booked', '2025-05-13 20:00:00', 12, 201),
+(202, 'Booked', '2025-05-13 18:00:00', 12, 202),
+(203, 'Available', '2025-05-13 19:00:00', 12, 203),
+(204, 'Booked', '2025-05-13 19:00:00', 12, 204),
+(205, 'Booked', '2025-05-13 18:00:00', 12, 205),
+(206, 'Booked', '2025-05-13 18:00:00', 12, 206),
+(207, 'Booked', '2025-05-13 19:00:00', 12, 207),
+(208, 'Booked', '2025-05-13 18:00:00', 12, 213),
+(209, 'Available', '2025-05-13 20:00:00', 12, 214),
+(210, 'Booked', '2025-05-13 18:00:00', 12, 215),
+(211, 'Booked', '2025-05-13 20:00:00', 12, 216);
 
 -- --------------------------------------------------------
 
@@ -1323,6 +1428,7 @@ ALTER TABLE `apptcontains`
 -- Indexes for table `barberhas`
 --
 ALTER TABLE `barberhas`
+  ADD PRIMARY KEY (`bhid`),
   ADD KEY `BarberID` (`BarberID`),
   ADD KEY `AppointmentID` (`AppointmentID`);
 
@@ -1383,8 +1489,8 @@ ALTER TABLE `migrations`
 --
 ALTER TABLE `notifications`
   ADD PRIMARY KEY (`NotificationID`),
-  ADD KEY `CustomerID` (`CustomerID`),
-  ADD KEY `AppointmentID` (`AppointmentID`);
+  ADD KEY `AppointmentID` (`AppointmentID`),
+  ADD KEY `CustomerID` (`CustomerID`);
 
 --
 -- Indexes for table `password_reset_tokens`
@@ -1450,7 +1556,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `appointments`
 --
 ALTER TABLE `appointments`
-  MODIFY `AppointmentID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=195;
+  MODIFY `AppointmentID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=217;
+
+--
+-- AUTO_INCREMENT for table `barberhas`
+--
+ALTER TABLE `barberhas`
+  MODIFY `bhid` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=194;
 
 --
 -- AUTO_INCREMENT for table `barbers`
@@ -1486,13 +1598,13 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `NotificationID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=151;
+  MODIFY `NotificationID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=187;
 
 --
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `PaymentID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=212;
+  MODIFY `PaymentID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=234;
 
 --
 -- AUTO_INCREMENT for table `reviews`
@@ -1510,7 +1622,7 @@ ALTER TABLE `services`
 -- AUTO_INCREMENT for table `slots`
 --
 ALTER TABLE `slots`
-  MODIFY `SlotID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=195;
+  MODIFY `SlotID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=212;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -1548,7 +1660,7 @@ ALTER TABLE `barberhas`
 --
 ALTER TABLE `notifications`
   ADD CONSTRAINT `AppointmentID` FOREIGN KEY (`AppointmentID`) REFERENCES `appointments` (`AppointmentID`),
-  ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`CustomerID`) REFERENCES `customers` (`UserID`);
+  ADD CONSTRAINT `CustomerID` FOREIGN KEY (`CustomerID`) REFERENCES `customers` (`UserID`);
 
 --
 -- Constraints for table `referrals`
