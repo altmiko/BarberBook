@@ -50,7 +50,7 @@ $upcomingAppointments = $upcomingResult->fetch_all(MYSQLI_ASSOC);
 // Get all past appointments
 $pastQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, s.Name as ServiceName, 
               b.FirstName as BarberFirstName, b.LastName as BarberLastName, p.Amount,
-              s.Duration, s.Price, r.ReviewID as has_review
+              s.Duration, s.Price, p.PayMethod, p.PayStatus, p.TransactionID, r.ReviewID as has_review
               FROM Appointments a 
               JOIN Payments p ON a.PaymentID = p.PaymentID 
               JOIN ApptContains ac ON a.AppointmentID = ac.AppointmentID 
@@ -96,10 +96,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_appointment'])
             if ($updateStmt->execute()) {
                 error_log("Successfully updated appointment status to Cancelled");
                 // Create notification for the customer
-                $notificationQuery = "INSERT INTO Notifications (RecipientEmail, Status, Subject, Body, CustomerID) 
+                $notificationQuery = "INSERT INTO Notifications (RecipientEmail, Status, Subject, Body, CustomerID, AppointmentID) 
                                     SELECT Email, 'pending', 'Appointment Cancelled', 
                                     CONCAT('Your appointment scheduled for ', DATE_FORMAT(StartTime, '%M %d, %Y at %h:%i %p'), ' has been cancelled.'), 
-                                    CustomerID 
+                                    CustomerID, AppointmentID
                                     FROM Appointments a 
                                     JOIN Customers c ON a.CustomerID = c.UserID 
                                     WHERE a.AppointmentID = ?";

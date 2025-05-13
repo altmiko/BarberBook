@@ -65,15 +65,15 @@ try {
     }
 
     // Create notification for the customer
-    $customerNotificationQuery = "INSERT INTO Notifications (CustomerID, Subject, Body, Status, SentAt) 
-                                 VALUES (?, ?, ?, 'pending', NOW())";
+    $customerNotificationQuery = "INSERT INTO Notifications (CustomerID, Subject, Body, Status, SentAt, AppointmentID) 
+                                 VALUES (?, ?, ?, 'pending', NOW(), ?)";
     $customerNotificationStmt = $conn->prepare($customerNotificationQuery);
     if (!$customerNotificationStmt) {
         throw new Exception("Prepare customer notification failed: " . $conn->error);
     }
     $subject = "Appointment Cancelled";
     $message = "You have cancelled your appointment scheduled for " . date('F j, Y g:i A', strtotime($appointment['StartTime']));
-    $customerNotificationStmt->bind_param("iss", $customer_id, $subject, $message);
+    $customerNotificationStmt->bind_param("issi", $customer_id, $subject, $message, $appointment_id);
     if (!$customerNotificationStmt->execute()) {
         throw new Exception("Execute customer notification failed: " . $customerNotificationStmt->error);
     }

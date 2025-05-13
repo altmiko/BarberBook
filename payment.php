@@ -101,6 +101,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $createdAppointmentIDs[] = $appointmentID;
 
+                // Create notification for barber
+                $notificationQuery = "INSERT INTO Notifications (RecipientEmail, SentAt, Status, Subject, Body, CustomerID, AppointmentID) 
+                                    SELECT b.Email, NOW(), 'Unread', 'New Appointment', 
+                                    CONCAT('You have a new appointment scheduled for ', DATE_FORMAT(?, '%M %d, %Y at %h:%i %p'), ' with ', c.FirstName, ' ', c.LastName),
+                                    ?, ?
+                                    FROM Customers c
+                                    JOIN Barbers b ON b.UserID = ?
+                                    WHERE c.UserID = ?";
+                $notificationStmt = $conn->prepare($notificationQuery);
+                if (!$notificationStmt) {
+                    throw new Exception("Failed to prepare barber notification query: " . $conn->error);
+                }
+                $notificationStmt->bind_param("siiii", $startTimeStr, $customerID, $appointmentID, $barberID, $customerID);
+                if (!$notificationStmt->execute()) {
+                    throw new Exception("Failed to create notification for barber: " . $notificationStmt->error);
+                }
+                $notificationStmt->close();
+
+                // Create notification for customer
+                $customerNotificationQuery = "INSERT INTO Notifications (RecipientEmail, SentAt, Status, Subject, Body, CustomerID, AppointmentID) 
+                                           SELECT c.Email, NOW(), 'Unread', 'Appointment Confirmed', 
+                                           CONCAT('Your appointment has been scheduled for ', DATE_FORMAT(?, '%M %d, %Y at %h:%i %p'), ' with ', b.FirstName, ' ', b.LastName),
+                                           ?, ?
+                                           FROM Customers c
+                                           JOIN Barbers b ON b.UserID = ?
+                                           WHERE c.UserID = ?";
+                $customerNotificationStmt = $conn->prepare($customerNotificationQuery);
+                if (!$customerNotificationStmt) {
+                    throw new Exception("Failed to prepare customer notification query: " . $conn->error);
+                }
+                $customerNotificationStmt->bind_param("siiii", $startTimeStr, $customerID, $appointmentID, $barberID, $customerID);
+                if (!$customerNotificationStmt->execute()) {
+                    throw new Exception("Failed to create notification for customer: " . $customerNotificationStmt->error);
+                }
+                $customerNotificationStmt->close();
+
                 // Create Slot Record
                 $slotStatus = 'Booked';
                 $stmt = $conn->prepare("INSERT INTO Slots (Status, Time, BarberID, AppointmentID) VALUES (?, ?, ?, ?)");

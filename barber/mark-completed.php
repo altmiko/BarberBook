@@ -64,8 +64,32 @@ $conn->begin_transaction();
 
 try {
     // Execute both updates
-    $updateStmt->execute();
-    $updatePaymentStmt->execute();
+    if (!$updateStmt->execute()) {
+        throw new Exception("Failed to update appointment status: " . $updateStmt->error);
+    }
+    
+    if (!$updatePaymentStmt->execute()) {
+        throw new Exception("Failed to update payment status: " . $updatePaymentStmt->error);
+    }
+    
+    // Create notification for customer
+    $notificationQuery = "INSERT INTO Notifications (RecipientEmail, Status, Subject, Body, CustomerID, AppointmentID, SentAt) 
+                        SELECT c.Email, 'Unread', 'Appointment Completed', 
+                        CONCAT('Your appointment scheduled for ', DATE_FORMAT(a.StartTime, '%M %d, %Y at %h:%i %p'), ' has been marked as completed by ', b.FirstName, ' ', b.LastName),
+                        c.UserID, a.AppointmentID, NOW()
+                        FROM Appointments a
+                        JOIN Customers c ON a.CustomerID = c.UserID
+                        JOIN Barbers b ON b.UserID = ?
+                        WHERE a.AppointmentID = ?";
+    $notificationStmt = $conn->prepare($notificationQuery);
+    if (!$notificationStmt) {
+        throw new Exception("Failed to prepare notification query: " . $conn->error);
+    }
+    
+    $notificationStmt->bind_param("ii", $barber_id, $appointment_id);
+    if (!$notificationStmt->execute()) {
+        throw new Exception("Failed to create completion notification: " . $notificationStmt->error);
+    }
     
     // Commit transaction
     $conn->commit();
@@ -73,7 +97,8 @@ try {
 } catch (Exception $e) {
     // Rollback transaction on error
     $conn->rollback();
-    setFlashMessage('Failed to mark appointment as completed.', 'error');
+    error_log("Error in mark-completed.php: " . $e->getMessage());
+    setFlashMessage('Failed to mark appointment as completed: ' . $e->getMessage(), 'error');
 }
 
 redirect('dashboard.php');

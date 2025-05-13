@@ -83,13 +83,6 @@ $result = $stmt->get_result();
                                                                     <?php echo htmlspecialchars($row['ServiceName']); ?>
                                                                 </li>
                                                             <?php endif; ?>
-                                                            <li>
-                                                                <i class="fas fa-info-circle"></i>
-                                                                <strong>Status:</strong> 
-                                                                <span class="status-badge status-<?php echo strtolower($row['AppointmentStatus']); ?>">
-                                                                    <?php echo ucfirst($row['AppointmentStatus']); ?>
-                                                                </span>
-                                                            </li>
                                                         </ul>
                                                     </div>
                                                 <?php endif; ?>

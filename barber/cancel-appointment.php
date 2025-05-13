@@ -64,11 +64,16 @@ function cancelAppointment($appointment_id, $barber_id, $conn) {
         $customerData = $customerResult->fetch_assoc();
         
         // Create notification for customer
-        $notificationQuery = "INSERT INTO Notifications (RecipientEmail, Status, Subject, Body, CustomerID) 
-                            VALUES (?, 'Unread', 'Appointment Cancelled', ?, ?)";
+        $notificationQuery = "INSERT INTO Notifications (RecipientEmail, Status, Subject, Body, CustomerID, AppointmentID) 
+                            SELECT c.Email, 'Unread', 'Appointment Cancelled', 
+                            CONCAT('Your appointment scheduled for ', a.StartTime, ' has been cancelled by ', b.FirstName, ' ', b.LastName),
+                            c.UserID, a.AppointmentID
+                            FROM Appointments a
+                            JOIN Customers c ON a.CustomerID = c.UserID
+                            JOIN Barbers b ON b.UserID = ?
+                            WHERE a.AppointmentID = ?";
         $notificationStmt = $conn->prepare($notificationQuery);
-        $message = "Your appointment has been cancelled by the barber.";
-        $notificationStmt->bind_param("ssi", $appointment['CustomerEmail'], $message, $customerData['CustomerID']);
+        $notificationStmt->bind_param("ii", $barber_id, $appointment_id);
         
         if (!$notificationStmt->execute()) {
             throw new Exception("Failed to create notification.");
