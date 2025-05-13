@@ -156,17 +156,18 @@ function getUserName($userID, $userType, $conn) {
  * @param string $subject Email subject
  * @param string $message Email message
  * @param int $customerID Customer ID
+ * @param int|null $appointmentID Appointment ID (optional)
  * @param mysqli $conn Database connection
  * @return bool True if email sent successfully, false otherwise
  */
-function sendNotification($to, $subject, $message, $customerID, $conn) {
+function sendNotification($to, $subject, $message, $customerID, $appointmentID = null, $conn) {
     // In a real application, you would use a library like PHPMailer
     // For now, we'll just insert into the Notifications table
-    $sql = "INSERT INTO Notifications (RecipientEmail, Subject, Body, Status, CustomerID) 
-            VALUES (?, ?, ?, 'pending', ?)";
+    $sql = "INSERT INTO Notifications (RecipientEmail, Subject, Body, Status, CustomerID, AppointmentID) 
+            VALUES (?, ?, ?, 'pending', ?, ?)";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssi", $to, $subject, $message, $customerID);
+    $stmt->bind_param("sssii", $to, $subject, $message, $customerID, $appointmentID);
     
     if ($stmt->execute()) {
         // In a real app, you would actually send the email here
