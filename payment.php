@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Create notification for barber
                 $notificationQuery = "INSERT INTO Notifications (RecipientEmail, SentAt, Status, Subject, Body, CustomerID, AppointmentID) 
                                     SELECT b.Email, NOW(), 'Unread', 'New Appointment', 
-                                    CONCAT('You have a new appointment scheduled for ', DATE_FORMAT(?, '%M %d, %Y at %h:%i %p'), ' with ', c.FirstName, ' ', c.LastName),
+                                    CONCAT('You have a new appointment scheduled for ', DATE_FORMAT(?, '%M %d, %Y at %h:%i %p'), ' with ', b.FirstName, ' ', b.LastName),
                                     ?, ?
                                     FROM Customers c
                                     JOIN Barbers b ON b.UserID = ?
@@ -136,6 +136,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception("Failed to create notification for customer: " . $customerNotificationStmt->error);
                 }
                 $customerNotificationStmt->close();
+
+                // Send email to customer
+                require_once 'sendmail.php';
+                $customerEmailQuery = "SELECT c.Email, c.FirstName, c.LastName, b.FirstName as BarberFirstName, b.LastName as BarberLastName 
+                                     FROM Customers c 
+                                     JOIN Barbers b ON b.UserID = ? 
+                                     WHERE c.UserID = ?";
+                $emailStmt = $conn->prepare($customerEmailQuery);
+                $emailStmt->bind_param("ii", $barberID, $customerID);
+                $emailStmt->execute();
+                $emailResult = $emailStmt->get_result();
+                $emailData = $emailResult->fetch_assoc();
+                
+                if ($emailData) {
+                    $emailSubject = "Appointment Confirmed - BarberBook";
+                    $emailBody = "
+                        <h2>Your appointment has been confirmed!</h2>
+                        <p>Dear {$emailData['FirstName']} {$emailData['LastName']},</p>
+                        <p>Your appointment has been scheduled for " . date('F j, Y g:i A', strtotime($startTimeStr)) . " with {$emailData['BarberFirstName']} {$emailData['BarberLastName']}.</p>
+                        <p>Thank you for choosing BarberBook!</p>
+                        <br>
+                        <p>Best regards,<br>BarberBook Team</p>
+                    ";
+                    sendEmail($emailData['Email'], $emailSubject, $emailBody);
+                }
 
                 // Create Slot Record
                 $slotStatus = 'Booked';

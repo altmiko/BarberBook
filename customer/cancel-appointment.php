@@ -65,17 +65,68 @@ try {
     }
 
     // Create notification for the customer
-    $customerNotificationQuery = "INSERT INTO Notifications (CustomerID, Subject, Body, Status, SentAt, AppointmentID) 
-                                 VALUES (?, ?, ?, 'pending', NOW(), ?)";
+    $customerNotificationQuery = "INSERT INTO Notifications (RecipientEmail, Status, Subject, Body, CustomerID, AppointmentID, SentAt) 
+                                 SELECT c.Email, 'Unread', 'Appointment Cancelled', 
+                                 CONCAT('Your appointment scheduled for ', DATE_FORMAT(a.StartTime, '%M %d, %Y at %h:%i %p'), ' has been cancelled.'),
+                                 c.UserID, a.AppointmentID, NOW()
+                                 FROM Appointments a
+                                 JOIN Customers c ON a.CustomerID = c.UserID
+                                 WHERE a.AppointmentID = ?";
     $customerNotificationStmt = $conn->prepare($customerNotificationQuery);
     if (!$customerNotificationStmt) {
         throw new Exception("Prepare customer notification failed: " . $conn->error);
     }
-    $subject = "Appointment Cancelled";
-    $message = "You have cancelled your appointment scheduled for " . date('F j, Y g:i A', strtotime($appointment['StartTime']));
-    $customerNotificationStmt->bind_param("issi", $customer_id, $subject, $message, $appointment_id);
+    $customerNotificationStmt->bind_param("i", $appointment_id);
     if (!$customerNotificationStmt->execute()) {
         throw new Exception("Execute customer notification failed: " . $customerNotificationStmt->error);
+    }
+
+    // Create notification for the barber
+    $barberNotificationQuery = "INSERT INTO Notifications (RecipientEmail, Status, Subject, Body, CustomerID, AppointmentID, SentAt) 
+                               SELECT b.Email, 'Unread', 'Appointment Cancelled by Customer', 
+                               CONCAT('Your appointment with ', c.FirstName, ' ', c.LastName, ' scheduled for ', 
+                               DATE_FORMAT(a.StartTime, '%M %d, %Y at %h:%i %p'), ' has been cancelled by the customer.'),
+                               c.UserID, a.AppointmentID, NOW()
+                               FROM Appointments a
+                               JOIN Customers c ON a.CustomerID = c.UserID
+                               JOIN BarberHas bh ON a.AppointmentID = bh.AppointmentID
+                               JOIN Barbers b ON bh.BarberID = b.UserID
+                               WHERE a.AppointmentID = ?";
+    $barberNotificationStmt = $conn->prepare($barberNotificationQuery);
+    if (!$barberNotificationStmt) {
+        throw new Exception("Prepare barber notification failed: " . $conn->error);
+    }
+    $barberNotificationStmt->bind_param("i", $appointment_id);
+    if (!$barberNotificationStmt->execute()) {
+        throw new Exception("Execute barber notification failed: " . $barberNotificationStmt->error);
+    }
+
+    // Send email to barber
+    require_once '../sendmail.php';
+    $emailQuery = "SELECT b.Email, b.FirstName as BarberFirstName, b.LastName as BarberLastName, 
+                  c.FirstName as CustomerFirstName, c.LastName as CustomerLastName, a.StartTime
+                  FROM Appointments a
+                  JOIN Customers c ON a.CustomerID = c.UserID
+                  JOIN BarberHas bh ON a.AppointmentID = bh.AppointmentID
+                  JOIN Barbers b ON bh.BarberID = b.UserID
+                  WHERE a.AppointmentID = ?";
+    $emailStmt = $conn->prepare($emailQuery);
+    $emailStmt->bind_param("i", $appointment_id);
+    $emailStmt->execute();
+    $emailResult = $emailStmt->get_result();
+    $emailData = $emailResult->fetch_assoc();
+    
+    if ($emailData) {
+        $emailSubject = "Appointment Cancelled by Customer - BarberBook";
+        $emailBody = "
+            <h2>Appointment Cancellation Notice</h2>
+            <p>Dear {$emailData['BarberFirstName']} {$emailData['BarberLastName']},</p>
+            <p>Your appointment with {$emailData['CustomerFirstName']} {$emailData['CustomerLastName']} scheduled for " . 
+            date('F j, Y g:i A', strtotime($emailData['StartTime'])) . " has been cancelled by the customer.</p>
+            <br>
+            <p>Best regards,<br>BarberBook Team</p>
+        ";
+        sendEmail($emailData['Email'], $emailSubject, $emailBody);
     }
 
     // Commit transaction

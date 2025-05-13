@@ -64,19 +64,51 @@ function cancelAppointment($appointment_id, $barber_id, $conn) {
         $customerData = $customerResult->fetch_assoc();
         
         // Create notification for customer
-        $notificationQuery = "INSERT INTO Notifications (RecipientEmail, Status, Subject, Body, CustomerID, AppointmentID) 
-                            SELECT c.Email, 'Unread', 'Appointment Cancelled', 
-                            CONCAT('Your appointment scheduled for ', a.StartTime, ' has been cancelled by ', b.FirstName, ' ', b.LastName),
-                            c.UserID, a.AppointmentID
+        $notificationQuery = "INSERT INTO Notifications (RecipientEmail, Status, Subject, Body, CustomerID, AppointmentID, SentAt) 
+                            SELECT c.Email, 'Unread', 'Appointment Cancelled by Barber', 
+                            CONCAT('Your appointment scheduled for ', DATE_FORMAT(a.StartTime, '%M %d, %Y at %h:%i %p'), 
+                            ' has been cancelled by ', b.FirstName, ' ', b.LastName, '.'),
+                            c.UserID, a.AppointmentID, NOW()
                             FROM Appointments a
                             JOIN Customers c ON a.CustomerID = c.UserID
-                            JOIN Barbers b ON b.UserID = ?
-                            WHERE a.AppointmentID = ?";
+                            JOIN BarberHas bh ON a.AppointmentID = bh.AppointmentID
+                            JOIN Barbers b ON bh.BarberID = b.UserID
+                            WHERE a.AppointmentID = ? AND bh.BarberID = ?";
         $notificationStmt = $conn->prepare($notificationQuery);
-        $notificationStmt->bind_param("ii", $barber_id, $appointment_id);
-        
+        if (!$notificationStmt) {
+            throw new Exception("Failed to prepare notification query: " . $conn->error);
+        }
+        $notificationStmt->bind_param("ii", $appointment_id, $barber_id);
         if (!$notificationStmt->execute()) {
-            throw new Exception("Failed to create notification.");
+            throw new Exception("Failed to create notification: " . $notificationStmt->error);
+        }
+        
+        // Send email to customer
+        require_once '../sendmail.php';
+        $emailQuery = "SELECT c.Email, c.FirstName, c.LastName, b.FirstName as BarberFirstName, b.LastName as BarberLastName, a.StartTime
+                      FROM Appointments a
+                      JOIN Customers c ON a.CustomerID = c.UserID
+                      JOIN BarberHas bh ON a.AppointmentID = bh.AppointmentID
+                      JOIN Barbers b ON bh.BarberID = b.UserID
+                      WHERE a.AppointmentID = ? AND bh.BarberID = ?";
+        $emailStmt = $conn->prepare($emailQuery);
+        $emailStmt->bind_param("ii", $appointment_id, $barber_id);
+        $emailStmt->execute();
+        $emailResult = $emailStmt->get_result();
+        $emailData = $emailResult->fetch_assoc();
+        
+        if ($emailData) {
+            $emailSubject = "Appointment Cancelled by Barber - BarberBook";
+            $emailBody = "
+                <h2>Appointment Cancellation Notice</h2>
+                <p>Dear {$emailData['FirstName']} {$emailData['LastName']},</p>
+                <p>Your appointment scheduled for " . date('F j, Y g:i A', strtotime($emailData['StartTime'])) . 
+                " has been cancelled by {$emailData['BarberFirstName']} {$emailData['BarberLastName']}.</p>
+                <p>We apologize for any inconvenience this may have caused.</p>
+                <br>
+                <p>Best regards,<br>BarberBook Team</p>
+            ";
+            sendEmail($emailData['Email'], $emailSubject, $emailBody);
         }
         
         // Commit transaction
