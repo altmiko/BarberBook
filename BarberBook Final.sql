@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 13, 2025 at 06:57 PM
+-- Generation Time: May 14, 2025 at 07:47 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -217,7 +217,7 @@ INSERT INTO `appointments` (`AppointmentID`, `StartTime`, `EndTime`, `Status`, `
 (198, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Cancelled', 215, 123, 12),
 (199, '2025-05-13 17:00:00', '2025-05-13 18:00:00', 'Cancelled', 216, 123, 12),
 (200, '2025-05-13 18:00:00', '2025-05-13 19:00:00', 'Completed', 217, 123, 12),
-(201, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Completed', 218, 123, 12),
+(201, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Cancelled', 218, 123, 12),
 (202, '2025-05-13 18:00:00', '2025-05-13 19:00:00', 'Completed', 219, 123, 12),
 (203, '2025-05-13 19:00:00', '2025-05-13 20:00:00', 'Cancelled', 220, 123, 12),
 (204, '2025-05-13 19:00:00', '2025-05-13 20:00:00', 'Cancelled', 221, 123, 12),
@@ -226,8 +226,25 @@ INSERT INTO `appointments` (`AppointmentID`, `StartTime`, `EndTime`, `Status`, `
 (207, '2025-05-13 19:00:00', '2025-05-13 20:00:00', 'Cancelled', 224, 123, 12),
 (213, '2025-05-13 18:00:00', '2025-05-13 19:00:00', 'Cancelled', 230, 123, 12),
 (214, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Cancelled', 231, 123, 12),
-(215, '2025-05-13 18:00:00', '2025-05-13 19:00:00', 'Scheduled', 232, 123, 12),
-(216, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Scheduled', 233, 123, 12);
+(215, '2025-05-13 18:00:00', '2025-05-13 19:00:00', 'Completed', 232, 123, 12),
+(216, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Cancelled', 233, 123, 12),
+(217, '2025-05-13 19:00:00', '2025-05-13 20:00:00', 'Cancelled', 234, 123, 12),
+(218, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Cancelled', 235, 123, 12),
+(219, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Cancelled', 236, 123, 12),
+(220, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Cancelled', 237, 123, 12),
+(221, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Cancelled', 238, 123, 12),
+(222, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Cancelled', 239, 123, 12),
+(223, '2025-05-13 20:00:00', '2025-05-13 21:00:00', 'Cancelled', 240, 123, 12),
+(224, '2025-05-13 19:00:00', '2025-05-13 20:00:00', 'Scheduled', 241, 123, 12),
+(225, '2025-05-13 18:00:00', '2025-05-13 19:00:00', 'Scheduled', 242, 123, 12),
+(226, '2025-05-14 14:00:00', '2025-05-14 15:00:00', 'Cancelled', 243, 123, 12),
+(227, '2025-05-14 15:00:00', '2025-05-14 16:00:00', 'Cancelled', 244, 123, 12),
+(228, '2025-05-14 18:00:00', '2025-05-14 19:00:00', 'Cancelled', 245, 123, 12),
+(229, '2025-05-14 19:00:00', '2025-05-14 20:00:00', 'Cancelled', 246, 123, 12),
+(230, '2025-05-14 17:00:00', '2025-05-14 18:00:00', 'Cancelled', 247, 123, 12),
+(231, '2025-05-14 18:00:00', '2025-05-14 19:00:00', 'Completed', 248, 123, 12),
+(232, '2025-05-14 20:00:00', '2025-05-14 21:00:00', 'Completed', 249, 123, 12),
+(233, '2025-05-14 20:00:00', '2025-05-14 21:00:00', 'Completed', 250, 123, 12);
 
 -- --------------------------------------------------------
 
@@ -440,7 +457,24 @@ INSERT INTO `apptcontains` (`ServiceID`, `AppointmentID`) VALUES
 (1, 213),
 (1, 214),
 (1, 215),
-(1, 216);
+(1, 216),
+(1, 217),
+(1, 218),
+(1, 219),
+(3, 220),
+(4, 221),
+(3, 222),
+(1, 223),
+(1, 224),
+(1, 225),
+(1, 226),
+(3, 227),
+(1, 228),
+(3, 229),
+(1, 230),
+(3, 231),
+(3, 232),
+(3, 233);
 
 -- --------------------------------------------------------
 
@@ -644,7 +678,24 @@ INSERT INTO `barberhas` (`BarberID`, `AppointmentID`, `bhid`) VALUES
 (12, 213, 190),
 (12, 214, 191),
 (12, 215, 192),
-(12, 216, 193);
+(12, 216, 193),
+(12, 217, 194),
+(12, 218, 195),
+(12, 219, 196),
+(12, 220, 197),
+(12, 221, 198),
+(12, 222, 199),
+(12, 223, 200),
+(12, 224, 201),
+(12, 225, 202),
+(12, 226, 203),
+(12, 227, 204),
+(12, 228, 205),
+(12, 229, 206),
+(12, 230, 207),
+(12, 231, 208),
+(12, 232, 209),
+(12, 233, 210);
 
 -- --------------------------------------------------------
 
@@ -867,7 +918,66 @@ INSERT INTO `notifications` (`NotificationID`, `RecipientEmail`, `SentAt`, `Stat
 (183, 'barber1@gmail.com', '2025-05-13 16:53:58', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 06:00 PM with Anisur Rahman', 123, 215),
 (184, 'user1@gmail.com', '2025-05-13 16:53:58', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 06:00 PM with Jocelyn Wilkins', 123, 215),
 (185, 'barber1@gmail.com', '2025-05-13 16:54:46', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 08:00 PM with Anisur Rahman', 123, 216),
-(186, 'user1@gmail.com', '2025-05-13 16:54:46', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 216);
+(186, 'user1@gmail.com', '2025-05-13 16:54:46', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 216),
+(187, 'user1@gmail.com', '2025-05-13 16:59:12', 'Unread', 'Appointment Completed', 'Your appointment scheduled for May 13, 2025 at 06:00 PM has been marked as completed by Jocelyn Wilkins', 123, 215),
+(188, 'barber1@gmail.com', '2025-05-13 17:02:07', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 07:00 PM with Anisur Rahman', 123, 217),
+(189, 'user1@gmail.com', '2025-05-13 17:02:07', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 07:00 PM with Jocelyn Wilkins', 123, 217),
+(190, 'user1@gmail.com', NULL, 'Unread', 'Appointment Cancelled', 'Your appointment scheduled for May 13, 2025 at 07:00 PM has been cancelled.', 123, 217),
+(191, 'user1@gmail.com', NULL, 'Unread', 'Appointment Cancelled', 'Your appointment scheduled for May 13, 2025 at 08:00 PM has been cancelled.', 123, 201),
+(192, 'user1@gmail.com', NULL, 'Unread', 'Appointment Cancelled', 'Your appointment scheduled for May 13, 2025 at 08:00 PM has been cancelled.', 123, 216),
+(193, 'barber1@gmail.com', '2025-05-13 17:03:08', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 218),
+(194, 'user1@gmail.com', '2025-05-13 17:03:08', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 218),
+(195, 'user1@gmail.com', NULL, 'Unread', 'Appointment Cancelled', 'Your appointment scheduled for May 13, 2025 at 08:00 PM has been cancelled by Jocelyn Wilkins', 123, 218),
+(196, 'barber1@gmail.com', '2025-05-13 17:04:26', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 219),
+(197, 'user1@gmail.com', '2025-05-13 17:04:26', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 219),
+(198, 'user1@gmail.com', NULL, 'Unread', 'Appointment Cancelled', 'Your appointment scheduled for May 13, 2025 at 08:00 PM has been cancelled.', 123, 219),
+(199, 'barber1@gmail.com', NULL, 'Unread', 'Appointment Cancelled by Customer', 'Your appointment with Anisur Rahman scheduled for May 13, 2025 at 08:00 PM has been cancelled by the customer.', 123, 219),
+(200, 'barber1@gmail.com', '2025-05-13 17:04:49', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 220),
+(201, 'user1@gmail.com', '2025-05-13 17:04:49', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 220),
+(202, 'user1@gmail.com', NULL, 'Unread', 'Appointment Cancelled by Barber', 'Your appointment scheduled for May 13, 2025 at 08:00 PM has been cancelled by Jocelyn Wilkins.', 123, 220),
+(203, 'barber1@gmail.com', '2025-05-13 17:06:49', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 221),
+(204, 'user1@gmail.com', '2025-05-13 17:06:49', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 221),
+(207, 'user1@gmail.com', '2025-05-13 17:07:18', 'Unread', 'Appointment Cancelled', 'Your appointment scheduled for May 13, 2025 at 08:00 PM has been cancelled.', 123, 221),
+(208, 'barber1@gmail.com', '2025-05-13 17:07:18', 'Unread', 'Appointment Cancelled by Customer', 'Your appointment with Anisur Rahman scheduled for May 13, 2025 at 08:00 PM has been cancelled by the customer.', 123, 221),
+(209, 'barber1@gmail.com', '2025-05-13 17:07:31', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 222),
+(210, 'user1@gmail.com', '2025-05-13 17:07:31', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 222),
+(211, 'user1@gmail.com', '2025-05-13 17:07:40', 'Unread', 'Appointment Cancelled by Barber', 'Your appointment scheduled for May 13, 2025 at 08:00 PM has been cancelled by Jocelyn Wilkins.', 123, 222),
+(212, 'barber1@gmail.com', '2025-05-13 17:16:45', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 223),
+(213, 'user1@gmail.com', '2025-05-13 17:16:45', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 223),
+(214, 'barber1@gmail.com', '2025-05-13 17:19:55', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 07:00 PM with Jocelyn Wilkins', 123, 224),
+(215, 'user1@gmail.com', '2025-05-13 17:19:55', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 07:00 PM with Jocelyn Wilkins', 123, 224),
+(216, 'barber1@gmail.com', '2025-05-13 20:32:40', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 13, 2025 at 06:00 PM with Anisur Rahman', 123, 225),
+(217, 'user1@gmail.com', '2025-05-13 20:32:40', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 13, 2025 at 06:00 PM with Jocelyn Wilkins', 123, 225),
+(218, 'user1@gmail.com', '2025-05-13 20:32:50', 'Unread', 'Appointment Cancelled', 'Your appointment scheduled for May 13, 2025 at 08:00 PM has been cancelled.', 123, 223),
+(219, 'barber1@gmail.com', '2025-05-13 20:32:50', 'Unread', 'Appointment Cancelled by Customer', 'Your appointment with Anisur Rahman scheduled for May 13, 2025 at 08:00 PM has been cancelled by the customer.', 123, 223),
+(220, 'barber1@gmail.com', '2025-05-13 20:36:56', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 14, 2025 at 02:00 PM with Jocelyn Wilkins', 123, 226),
+(221, 'user1@gmail.com', '2025-05-13 20:36:56', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 14, 2025 at 02:00 PM with Jocelyn Wilkins', 123, 226),
+(222, 'barber1@gmail.com', '2025-05-13 20:37:00', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 14, 2025 at 03:00 PM with Jocelyn Wilkins', 123, 227),
+(223, 'user1@gmail.com', '2025-05-13 20:37:00', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 14, 2025 at 03:00 PM with Jocelyn Wilkins', 123, 227),
+(224, 'user1@gmail.com', '2025-05-13 20:37:44', 'Unread', 'Appointment Completed', 'Your appointment scheduled for May 14, 2025 at 02:00 PM has been marked as completed by Jocelyn Wilkins', 123, 226),
+(225, 'user1@gmail.com', '2025-05-13 20:38:09', 'Unread', 'Appointment Cancelled by Barber', 'Your appointment scheduled for May 14, 2025 at 03:00 PM has been cancelled by Jocelyn Wilkins.', 123, 227),
+(226, 'barber1@gmail.com', '2025-05-13 20:52:31', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 14, 2025 at 06:00 PM with Jocelyn Wilkins', 123, 228),
+(227, 'user1@gmail.com', '2025-05-13 20:52:31', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 14, 2025 at 06:00 PM with Jocelyn Wilkins', 123, 228),
+(228, 'barber1@gmail.com', '2025-05-13 20:52:35', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 14, 2025 at 07:00 PM with Jocelyn Wilkins', 123, 229),
+(229, 'user1@gmail.com', '2025-05-13 20:52:35', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 14, 2025 at 07:00 PM with Jocelyn Wilkins', 123, 229),
+(230, 'user1@gmail.com', NULL, 'pending', 'Appointment Completed', 'Your appointment scheduled for May 14, 2025 at 06:00 PM has been marked as completed.', 123, 228),
+(231, 'user1@gmail.com', NULL, 'pending', 'Appointment Cancelled by Barber', 'Your appointment scheduled for May 14, 2025 at 07:00 PM has been cancelled by the barber.', 123, 229),
+(232, 'user1@gmail.com', '2025-05-14 05:17:51', 'Unread', 'Appointment Cancelled', 'Your appointment scheduled for May 14, 2025 at 02:00 PM has been cancelled.', 123, 226),
+(233, 'barber1@gmail.com', '2025-05-14 05:17:51', 'Unread', 'Appointment Cancelled by Customer', 'Your appointment with Anisur Rahman scheduled for May 14, 2025 at 02:00 PM has been cancelled by the customer.', 123, 226),
+(234, 'user1@gmail.com', '2025-05-14 05:17:58', 'Unread', 'Appointment Cancelled', 'Your appointment scheduled for May 14, 2025 at 06:00 PM has been cancelled.', 123, 228),
+(235, 'barber1@gmail.com', '2025-05-14 05:17:58', 'Unread', 'Appointment Cancelled by Customer', 'Your appointment with Anisur Rahman scheduled for May 14, 2025 at 06:00 PM has been cancelled by the customer.', 123, 228),
+(236, 'barber1@gmail.com', '2025-05-14 05:18:36', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 14, 2025 at 05:00 PM with Jocelyn Wilkins', 123, 230),
+(237, 'user1@gmail.com', '2025-05-14 05:18:36', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 14, 2025 at 05:00 PM with Jocelyn Wilkins', 123, 230),
+(238, 'barber1@gmail.com', '2025-05-14 05:18:40', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 14, 2025 at 06:00 PM with Jocelyn Wilkins', 123, 231),
+(239, 'user1@gmail.com', '2025-05-14 05:18:40', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 14, 2025 at 06:00 PM with Jocelyn Wilkins', 123, 231),
+(240, 'user1@gmail.com', NULL, 'pending', 'Appointment Cancelled', 'Your appointment scheduled for May 14, 2025 at 05:00 PM has been cancelled.', 123, 230),
+(241, 'user1@gmail.com', NULL, 'pending', 'Appointment Completed', 'Your appointment scheduled for May 14, 2025 at 06:00 PM has been marked as completed.', 123, 231),
+(242, 'barber1@gmail.com', '2025-05-14 05:34:37', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 14, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 232),
+(243, 'user1@gmail.com', '2025-05-14 05:34:37', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 14, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 232),
+(244, 'user1@gmail.com', NULL, 'pending', 'Appointment Completed', 'Your appointment scheduled for May 14, 2025 at 08:00 PM has been marked as completed.', 123, 232),
+(245, 'barber1@gmail.com', '2025-05-14 05:35:49', 'Unread', 'New Appointment', 'You have a new appointment scheduled for May 14, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 233),
+(246, 'user1@gmail.com', '2025-05-14 05:35:49', 'Unread', 'Appointment Confirmed', 'Your appointment has been scheduled for May 14, 2025 at 08:00 PM with Jocelyn Wilkins', 123, 233),
+(247, 'user1@gmail.com', NULL, 'pending', 'Appointment Completed', 'Your appointment scheduled for May 14, 2025 at 08:00 PM has been marked as completed.', 123, 233);
 
 -- --------------------------------------------------------
 
@@ -1052,8 +1162,25 @@ INSERT INTO `payments` (`PaymentID`, `Amount`, `PayMethod`, `PayStatus`, `Create
 (224, 250, 'Cash', 'Pending', '2025-05-13 16:42:14', '2025-05-13 16:42:14', ''),
 (230, 250, 'Cash', 'Pending', '2025-05-13 16:49:38', '2025-05-13 16:49:38', ''),
 (231, 250, 'Cash', 'Pending', '2025-05-13 16:50:12', '2025-05-13 16:50:12', ''),
-(232, 250, 'Cash', 'Pending', '2025-05-13 16:53:58', '2025-05-13 16:53:58', ''),
-(233, 250, 'Cash', 'Pending', '2025-05-13 16:54:46', '2025-05-13 16:54:46', '');
+(232, 250, 'Cash', 'Completed', '2025-05-13 16:53:58', '2025-05-13 16:59:12', ''),
+(233, 250, 'Cash', 'Pending', '2025-05-13 16:54:46', '2025-05-13 16:54:46', ''),
+(234, 250, 'Rocket', 'Pending', '2025-05-13 17:02:07', '2025-05-13 17:02:07', '11111111111'),
+(235, 250, 'Cash', 'Pending', '2025-05-13 17:03:08', '2025-05-13 17:03:08', ''),
+(236, 250, 'Cash', 'Pending', '2025-05-13 17:04:26', '2025-05-13 17:04:26', ''),
+(237, 150, 'Cash', 'Pending', '2025-05-13 17:04:49', '2025-05-13 17:04:49', ''),
+(238, 250, 'Cash', 'Pending', '2025-05-13 17:06:49', '2025-05-13 17:06:49', ''),
+(239, 150, 'Cash', 'Pending', '2025-05-13 17:07:31', '2025-05-13 17:07:31', ''),
+(240, 250, 'Cash', 'Pending', '2025-05-13 17:16:45', '2025-05-13 17:16:45', ''),
+(241, 250, 'Cash', 'Pending', '2025-05-13 17:19:55', '2025-05-13 17:19:55', ''),
+(242, 250, 'Cash', 'Pending', '2025-05-13 20:32:40', '2025-05-13 20:32:40', ''),
+(243, 250, 'Cash', 'Completed', '2025-05-13 20:36:56', '2025-05-13 20:37:44', ''),
+(244, 150, 'Cash', 'Pending', '2025-05-13 20:36:56', '2025-05-13 20:36:56', ''),
+(245, 250, 'Cash', 'Pending', '2025-05-13 20:52:31', '2025-05-13 20:52:31', ''),
+(246, 150, 'Cash', 'Pending', '2025-05-13 20:52:31', '2025-05-13 20:52:31', ''),
+(247, 250, 'Rocket', 'Pending', '2025-05-14 05:18:36', '2025-05-14 05:18:36', '11111111111'),
+(248, 150, 'Rocket', 'Pending', '2025-05-14 05:18:36', '2025-05-14 05:18:36', '11111111111'),
+(249, 150, 'Nagad', 'Pending', '2025-05-14 05:34:37', '2025-05-14 05:34:37', '12345678911'),
+(250, 150, 'Nagad', 'Pending', '2025-05-14 05:35:49', '2025-05-14 05:35:49', '12345555555');
 
 -- --------------------------------------------------------
 
@@ -1379,7 +1506,24 @@ INSERT INTO `slots` (`SlotID`, `Status`, `Time`, `BarberID`, `AppointmentID`) VA
 (208, 'Booked', '2025-05-13 18:00:00', 12, 213),
 (209, 'Available', '2025-05-13 20:00:00', 12, 214),
 (210, 'Booked', '2025-05-13 18:00:00', 12, 215),
-(211, 'Booked', '2025-05-13 20:00:00', 12, 216);
+(211, 'Booked', '2025-05-13 20:00:00', 12, 216),
+(212, 'Booked', '2025-05-13 19:00:00', 12, 217),
+(213, 'Available', '2025-05-13 20:00:00', 12, 218),
+(214, 'Booked', '2025-05-13 20:00:00', 12, 219),
+(215, 'Available', '2025-05-13 20:00:00', 12, 220),
+(216, 'Booked', '2025-05-13 20:00:00', 12, 221),
+(217, 'Available', '2025-05-13 20:00:00', 12, 222),
+(218, 'Booked', '2025-05-13 20:00:00', 12, 223),
+(219, 'Booked', '2025-05-13 19:00:00', 12, 224),
+(220, 'Booked', '2025-05-13 18:00:00', 12, 225),
+(221, 'Booked', '2025-05-14 14:00:00', 12, 226),
+(222, 'Available', '2025-05-14 15:00:00', 12, 227),
+(223, 'Booked', '2025-05-14 18:00:00', 12, 228),
+(224, 'Booked', '2025-05-14 19:00:00', 12, 229),
+(225, 'Booked', '2025-05-14 17:00:00', 12, 230),
+(226, 'Booked', '2025-05-14 18:00:00', 12, 231),
+(227, 'Booked', '2025-05-14 20:00:00', 12, 232),
+(228, 'Booked', '2025-05-14 20:00:00', 12, 233);
 
 -- --------------------------------------------------------
 
@@ -1556,13 +1700,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `appointments`
 --
 ALTER TABLE `appointments`
-  MODIFY `AppointmentID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=217;
+  MODIFY `AppointmentID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=234;
 
 --
 -- AUTO_INCREMENT for table `barberhas`
 --
 ALTER TABLE `barberhas`
-  MODIFY `bhid` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=194;
+  MODIFY `bhid` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=211;
 
 --
 -- AUTO_INCREMENT for table `barbers`
@@ -1598,13 +1742,13 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `NotificationID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=187;
+  MODIFY `NotificationID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=248;
 
 --
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `PaymentID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=234;
+  MODIFY `PaymentID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=251;
 
 --
 -- AUTO_INCREMENT for table `reviews`
@@ -1622,7 +1766,7 @@ ALTER TABLE `services`
 -- AUTO_INCREMENT for table `slots`
 --
 ALTER TABLE `slots`
-  MODIFY `SlotID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=212;
+  MODIFY `SlotID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=229;
 
 --
 -- AUTO_INCREMENT for table `users`
