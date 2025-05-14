@@ -192,14 +192,11 @@ include '../includes/header.php';
                                             <i class="fas fa-credit-card"></i>
                                             <span>
                                                 <?php echo htmlspecialchars($appointment['PayMethod']); ?>
-                                                <?php if ($appointment['PayStatus'] === 'Pending'): ?>
-                                                    <span class="payment-status pending">(Pending)</span>
-                                                <?php elseif ($appointment['PayStatus'] === 'Completed'): ?>
-                                                    <span class="payment-status paid">(Paid)</span>
+                                    
                                                     <?php if ($appointment['TransactionID']): ?>
                                                         <span class="transaction-id">#<?php echo htmlspecialchars($appointment['TransactionID']); ?></span>
                                                     <?php endif; ?>
-                                                <?php endif; ?>
+                                      
                                             </span>
                                         </div>
                                     </div>
@@ -263,14 +260,9 @@ include '../includes/header.php';
                                             <i class="fas fa-credit-card"></i>
                                             <span>
                                                 <?php echo htmlspecialchars($appointment['PayMethod']); ?>
-                                                <?php if ($appointment['PayStatus'] === 'Pending'): ?>
-                                                    <span class="payment-status pending">(Pending)</span>
-                                                <?php elseif ($appointment['PayStatus'] === 'Completed'): ?>
-                                                    <span class="payment-status paid">(Paid)</span>
                                                     <?php if ($appointment['TransactionID']): ?>
                                                         <span class="transaction-id">#<?php echo htmlspecialchars($appointment['TransactionID']); ?></span>
                                                     <?php endif; ?>
-                                                <?php endif; ?>
                                             </span>
                                         </div>
                                     </div>

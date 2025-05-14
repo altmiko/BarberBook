@@ -46,7 +46,7 @@ $upcomingQuery = "SELECT a.AppointmentID, a.StartTime, a.EndTime, a.Status, s.Na
                   JOIN Services s ON ac.ServiceID = s.ServiceID 
                   JOIN BarberHas bh ON a.AppointmentID = bh.AppointmentID 
                   JOIN Barbers b ON bh.BarberID = b.UserID 
-                  WHERE a.CustomerID = ? AND a.StartTime > NOW() AND a.Status != 'cancelled' 
+                  WHERE a.CustomerID = ? AND DATE(a.StartTime) > CURDATE() AND a.Status != 'cancelled' 
                   ORDER BY a.StartTime ASC 
                   LIMIT 5";
 
@@ -214,14 +214,10 @@ include '../includes/header.php';
                                                         <span class="payment-info">
                                                             <i class="fas fa-credit-card"></i>
                                                             <?php echo $appointment['PayMethod']; ?>
-                                                            <?php if ($appointment['PayStatus'] === 'Pending'): ?>
-                                                                <span class="payment-status pending">(Pending)</span>
-                                                            <?php elseif ($appointment['PayStatus'] === 'Completed'): ?>
-                                                                <span class="payment-status paid">(Paid)</span>
                                                                 <?php if (!empty($appointment['TransactionID'])): ?>
                                                                     <span class="transaction-id">#<?php echo htmlspecialchars($appointment['TransactionID']); ?></span>
                                                                 <?php endif; ?>
-                                                            <?php endif; ?>
+                                                        
                                                         </span>
                                                     </div>
                                                     <span class="price">BDT <?php echo $appointment['Amount']; ?></span>
@@ -293,10 +289,7 @@ include '../includes/header.php';
                                                         <span class="payment-info">
                                                             <i class="fas fa-credit-card"></i>
                                                             <?php echo $appointment['PayMethod']; ?>
-                                                            <?php if ($appointment['PayStatus'] === 'Pending'): ?>
-                                                                <span class="payment-status pending">(Pending)</span>
-                                                            <?php elseif ($appointment['PayStatus'] === 'Completed'): ?>
-                                                                <span class="payment-status paid">(Paid)</span>
+                                                            <?php if (!empty($appointment['TransactionID'])): ?>
                                                                 <?php if (!empty($appointment['TransactionID'])): ?>
                                                                     <span class="transaction-id">#<?php echo htmlspecialchars($appointment['TransactionID']); ?></span>
                                                                 <?php endif; ?>
@@ -362,10 +355,7 @@ include '../includes/header.php';
                                                         <span class="payment-info">
                                                             <i class="fas fa-credit-card"></i>
                                                             <?php echo $appointment['PayMethod']; ?>
-                                                            <?php if ($appointment['PayStatus'] === 'Pending'): ?>
-                                                                <span class="payment-status pending">(Pending)</span>
-                                                            <?php elseif ($appointment['PayStatus'] === 'Completed'): ?>
-                                                                <span class="payment-status paid">(Paid)</span>
+                                                            <?php if (!empty($appointment['TransactionID'])): ?>
                                                                 <?php if (!empty($appointment['TransactionID'])): ?>
                                                                     <span class="transaction-id">#<?php echo htmlspecialchars($appointment['TransactionID']); ?></span>
                                                                 <?php endif; ?>
